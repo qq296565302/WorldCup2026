@@ -1,0 +1,152 @@
+/* ============ 设计 Token 系统 ============ */
+:root {
+  /* 品牌色 */
+  --wc-primary: #e53e3e;
+  --wc-primary-dark: #c53030;
+  --wc-primary-light: #fef2f2;
+  --wc-secondary: #2b6cb0;
+  --wc-secondary-dark: #1a4e8a;
+  --wc-secondary-light: #eff6ff;
+  --wc-accent: #38a169;
+  --wc-accent-dark: #276749;
+  --wc-accent-light: #f0fdf4;
+  --wc-dark: #1e3a5f;
+  --wc-darker: #0f2744;
+
+  /* 灰度色阶 */
+  --wc-gray-50: #f9fafb;
+  --wc-gray-100: #f3f4f6;
+  --wc-gray-200: #e5e7eb;
+  --wc-gray-300: #d1d5db;
+  --wc-gray-400: #9ca3af;
+  --wc-gray-500: #6b7280;
+  --wc-gray-600: #4b5563;
+  --wc-gray-700: #374151;
+  --wc-gray-800: #1f2937;
+  --wc-gray-900: #1a1a1a;
+
+  /* 语义色 */
+  --wc-bg: #f5f5f5;
+  --wc-surface: #ffffff;
+  --wc-text-primary: var(--wc-gray-800);
+  --wc-text-secondary: var(--wc-gray-500);
+  --wc-text-muted: var(--wc-gray-400);
+  --wc-border: var(--wc-gray-200);
+  --wc-border-light: var(--wc-gray-100);
+
+  /* 间距 */
+  --wc-space-xs: 4px;
+  --wc-space-sm: 8px;
+  --wc-space-md: 12px;
+  --wc-space-lg: 16px;
+  --wc-space-xl: 20px;
+  --wc-space-2xl: 24px;
+  --wc-space-3xl: 32px;
+  --wc-space-4xl: 48px;
+  --wc-space-5xl: 60px;
+
+  /* 字号 */
+  --wc-font-size-xs: 11px;
+  --wc-font-size-sm: 12px;
+  --wc-font-size-md: 13px;
+  --wc-font-size-base: 14px;
+  --wc-font-size-lg: 15px;
+  --wc-font-size-xl: 16px;
+  --wc-font-size-2xl: 18px;
+  --wc-font-size-3xl: 20px;
+  --wc-font-size-4xl: 22px;
+  --wc-font-size-5xl: 32px;
+  --wc-font-size-6xl: 48px;
+
+  /* 字重 */
+  --wc-font-weight-normal: 400;
+  --wc-font-weight-medium: 500;
+  --wc-font-weight-semibold: 600;
+  --wc-font-weight-bold: 700;
+  --wc-font-weight-black: 800;
+
+  /* 圆角 */
+  --wc-radius-sm: 4px;
+  --wc-radius-md: 8px;
+  --wc-radius-lg: 10px;
+  --wc-radius-xl: 12px;
+  --wc-radius-2xl: 16px;
+  --wc-radius-full: 9999px;
+
+  /* 阴影 */
+  --wc-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --wc-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --wc-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+  /* 过渡 */
+  --wc-transition-fast: 0.15s ease;
+  --wc-transition-base: 0.2s ease;
+  --wc-transition-slow: 0.3s ease;
+
+  /* 布局 */
+  --wc-max-width: 480px;
+  --wc-header-height: 56px;
+  --wc-tab-bar-height: 56px;
+}
+
+/* ============ 全局重置 ============ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: var(--wc-bg);
+  color: var(--wc-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-container {
+  flex: 1;
+  padding-bottom: var(--wc-tab-bar-height);
+  overflow-y: auto;
+  max-width: var(--wc-max-width);
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ============ 全局动画 ============ */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity var(--wc-transition-base);
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* ============ 桌面端响应式 ============ */
+@media (min-width: 768px) {
+  body {
+    background: var(--wc-gray-200);
+  }
+
+  .page-container {
+    box-shadow: var(--wc-shadow-lg);
+    min-height: 100vh;
+  }
+}
