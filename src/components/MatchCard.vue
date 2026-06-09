@@ -69,7 +69,7 @@ const onFavClick = (e) => {
       <!-- 主队 -->
       <div class="team-col home">
         <div class="team-flag">
-          <img v-if="homeTeam.logo" :src="homeTeam.logo" :alt="homeTeam.name" class="flag-img" />
+          <img v-if="homeTeam.logo" :src="homeTeam.logo" :alt="homeTeam.name" loading="lazy" class="flag-img" />
           <span v-else>{{ homeTeam.flag }}</span>
         </div>
         <div class="team-name">{{ homeTeam.name }}</div>
@@ -88,7 +88,7 @@ const onFavClick = (e) => {
       <!-- 客队 -->
       <div class="team-col away">
         <div class="team-flag">
-          <img v-if="awayTeam.logo" :src="awayTeam.logo" :alt="awayTeam.name" class="flag-img" />
+          <img v-if="awayTeam.logo" :src="awayTeam.logo" :alt="awayTeam.name" loading="lazy" class="flag-img" />
           <span v-else>{{ awayTeam.flag }}</span>
         </div>
         <div class="team-name">{{ awayTeam.name }}</div>

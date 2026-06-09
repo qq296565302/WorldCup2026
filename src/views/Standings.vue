@@ -4,7 +4,7 @@ import { getStandings } from '../services'
 import { teams, getAllGroups, getTeamsByGroup, getTeamById } from '../data/teams'
 import PageHeader from '../components/PageHeader.vue'
 import LoadingState from '../components/LoadingState.vue'
-import wcLogo from '../assets/wc2026-logo.png'
+import wcLogo from '../assets/wc2026-logo.webp'
 
 const loading = ref(true)
 const standings = ref({})
@@ -35,8 +35,9 @@ onMounted(async () => {
   standings.value = initStandings()
 
   try {
-    for (const group of groups) {
-      const data = await getStandings(group)
+    const results = await Promise.all(groups.map(group => getStandings(group)))
+    results.forEach((data, idx) => {
+      const group = groups[idx]
       if (data?.length > 0) {
         standings.value[group] = data.map(item => {
           const team = getTeamById(item.team_id || item.teamId)
@@ -56,7 +57,7 @@ onMounted(async () => {
           }
         })
       }
-    }
+    })
   } catch (error) {
     console.warn('积分榜数据加载失败:', error)
   } finally {
@@ -70,7 +71,7 @@ onMounted(async () => {
     <section class="standings-banner">
       <div class="banner-bg"></div>
       <div class="banner-content">
-        <img :src="wcLogo" alt="2026 FIFA World Cup" class="banner-logo" />
+        <img :src="wcLogo" alt="2026 FIFA World Cup" loading="lazy" class="banner-logo" />
         <div class="banner-text">
           <h1 class="banner-title">小组积分榜</h1>
           <p class="banner-sub">12 个小组 · 48 支队伍</p>
@@ -110,7 +111,7 @@ onMounted(async () => {
                 </td>
                 <td class="col-team">
                   <span class="team-flag">
-                    <img v-if="team.team_logo" :src="team.team_logo" :alt="team.team_name" class="flag-img" />
+                    <img v-if="team.team_logo" :src="team.team_logo" :alt="team.team_name" loading="lazy" class="flag-img" />
                     <span v-else>{{ team.team_flag }}</span>
                   </span>
                   <span class="team-name">{{ team.team_name }}</span>

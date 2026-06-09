@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { teams, getAllGroups, getTeamsByGroup } from '../data/teams'
 import PageHeader from '../components/PageHeader.vue'
-import wcLogo from '../assets/wc2026-logo.png'
+import wcLogo from '../assets/wc2026-logo.webp'
 
 const router = useRouter()
 
@@ -22,7 +22,7 @@ const goToTeam = (teamId) => {
     <section class="teams-banner">
       <div class="banner-bg"></div>
       <div class="banner-content">
-        <img :src="wcLogo" alt="2026 FIFA World Cup" class="banner-logo" />
+        <img :src="wcLogo" alt="2026 FIFA World Cup" loading="lazy" class="banner-logo" />
         <div class="banner-text">
           <h1 class="banner-title">参赛队伍</h1>
           <p class="banner-sub">48 支队伍 · 美国·加拿大·墨西哥</p>
@@ -42,7 +42,7 @@ const goToTeam = (teamId) => {
             @click="goToTeam(team.id)"
           >
             <div class="card-flag">
-              <img v-if="team.logo" :src="team.logo" :alt="team.name" class="flag-img" />
+              <img v-if="team.logo" :src="team.logo" :alt="team.name" loading="lazy" class="flag-img" />
               <span v-else>{{ team.flag }}</span>
             </div>
             <div class="card-info">

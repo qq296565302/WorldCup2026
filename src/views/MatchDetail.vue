@@ -267,7 +267,7 @@ const formatMatchDate = (dateStr) => {
         <div class="match-teams">
           <div class="team-block" @click="router.push(`/team/${resolveTeamId(match.home_team)}`)">
             <div class="team-logo-wrap">
-              <img v-if="homeLogo" :src="homeLogo" alt="" class="team-logo-img" />
+              <img v-if="homeLogo" :src="homeLogo" alt="" loading="lazy" class="team-logo-img" />
               <span v-else class="team-flag-emoji">{{ getTeamInfo(match.home_team, match.home_name).flag }}</span>
             </div>
             <div class="team-name">{{ getTeamInfo(match.home_team, match.home_name).name }}</div>
@@ -289,7 +289,7 @@ const formatMatchDate = (dateStr) => {
 
           <div class="team-block" @click="router.push(`/team/${resolveTeamId(match.away_team)}`)">
             <div class="team-logo-wrap">
-              <img v-if="awayLogo" :src="awayLogo" alt="" class="team-logo-img" />
+              <img v-if="awayLogo" :src="awayLogo" alt="" loading="lazy" class="team-logo-img" />
               <span v-else class="team-flag-emoji">{{ getTeamInfo(match.away_team, match.away_name).flag }}</span>
             </div>
             <div class="team-name">{{ getTeamInfo(match.away_team, match.away_name).name }}</div>
@@ -400,7 +400,7 @@ const formatMatchDate = (dateStr) => {
         <template v-if="lineupInfo">
           <div class="card" v-if="lineupInfo.home?.lineups || lineupInfo.homeForecast?.lineups">
             <div class="card-title lineup-title">
-              <img :src="homeLogo" class="lineup-team-logo" v-if="homeLogo" />
+              <img :src="homeLogo" loading="lazy" class="lineup-team-logo" v-if="homeLogo" />
               {{ getTeamInfo(match.home_team, match.home_name).name }}
               <span class="formation" v-if="lineupInfo.home?.formation || lineupInfo.homeForecast?.formation">
                 {{ lineupInfo.home?.formation || lineupInfo.homeForecast?.formation }}
@@ -416,7 +416,7 @@ const formatMatchDate = (dateStr) => {
           </div>
           <div class="card" v-if="lineupInfo.away?.lineups || lineupInfo.awayForecast?.lineups">
             <div class="card-title lineup-title">
-              <img :src="awayLogo" class="lineup-team-logo" v-if="awayLogo" />
+              <img :src="awayLogo" loading="lazy" class="lineup-team-logo" v-if="awayLogo" />
               {{ getTeamInfo(match.away_team, match.away_name).name }}
               <span class="formation" v-if="lineupInfo.away?.formation || lineupInfo.awayForecast?.formation">
                 {{ lineupInfo.away?.formation || lineupInfo.awayForecast?.formation }}
@@ -620,7 +620,7 @@ const formatMatchDate = (dateStr) => {
             <!-- 主队近期 -->
             <div class="recent-section" v-if="recentHome.length">
               <div class="recent-team">
-                <img :src="dqAnalysis.team_A_logo" class="recent-logo" v-if="dqAnalysis.team_A_logo" />
+                <img :src="dqAnalysis.team_A_logo" loading="lazy" class="recent-logo" v-if="dqAnalysis.team_A_logo" />
                 {{ dqAnalysis.team_A }}
               </div>
               <div v-for="(g, i) in recentHome" :key="'h'+i" class="recent-item">
@@ -638,7 +638,7 @@ const formatMatchDate = (dateStr) => {
             <!-- 客队近期 -->
             <div class="recent-section" v-if="recentAway.length">
               <div class="recent-team">
-                <img :src="dqAnalysis.team_B_logo" class="recent-logo" v-if="dqAnalysis.team_B_logo" />
+                <img :src="dqAnalysis.team_B_logo" loading="lazy" class="recent-logo" v-if="dqAnalysis.team_B_logo" />
                 {{ dqAnalysis.team_B }}
               </div>
               <div v-for="(g, i) in recentAway" :key="'a'+i" class="recent-item">
@@ -660,7 +660,7 @@ const formatMatchDate = (dateStr) => {
             <div class="card-title">未来赛程</div>
             <div class="recent-section" v-if="futureHome.length">
               <div class="recent-team">
-                <img :src="dqAnalysis.team_A_logo" class="recent-logo" v-if="dqAnalysis.team_A_logo" />
+                <img :src="dqAnalysis.team_A_logo" loading="lazy" class="recent-logo" v-if="dqAnalysis.team_A_logo" />
                 {{ dqAnalysis.team_A }}
               </div>
               <div v-for="(g, i) in futureHome" :key="'fh'+i" class="recent-item">
@@ -677,7 +677,7 @@ const formatMatchDate = (dateStr) => {
             </div>
             <div class="recent-section" v-if="futureAway.length">
               <div class="recent-team">
-                <img :src="dqAnalysis.team_B_logo" class="recent-logo" v-if="dqAnalysis.team_B_logo" />
+                <img :src="dqAnalysis.team_B_logo" loading="lazy" class="recent-logo" v-if="dqAnalysis.team_B_logo" />
                 {{ dqAnalysis.team_B }}
               </div>
               <div v-for="(g, i) in futureAway" :key="'fa'+i" class="recent-item">

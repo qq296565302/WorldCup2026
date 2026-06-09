@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { shallowRef, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getPlayerDetailById } from '../data/players'
 import { getPlayerByPersonId, getTeamByPersonId } from '../data/squads'
@@ -7,22 +7,22 @@ import { getTeamById } from '../data/teams'
 import PageHeader from '../components/PageHeader.vue'
 import EmptyState from '../components/EmptyState.vue'
 import SectionTitle from '../components/SectionTitle.vue'
+import LoadingState from '../components/LoadingState.vue'
 
 const route = useRoute()
 const router = useRouter()
 const personId = route.params.id
-const localPlayer = ref(null)
-const teamCode = ref('')
-const playerData = ref(null)
+const localPlayer = shallowRef(getPlayerByPersonId(personId))
+const teamCode = getTeamByPersonId(personId) || ''
+const playerData = shallowRef(null)
+const dataLoading = computed(() => localPlayer.value && !playerData.value)
 
-// 本地数据（来自 squads.js）
-localPlayer.value = getPlayerByPersonId(personId)
-teamCode.value = getTeamByPersonId(personId) || ''
+const team = computed(() => teamCode ? getTeamById(teamCode) : null)
 
-// 本地详情数据（来自 players.js）
-playerData.value = getPlayerDetailById(personId)
-
-const team = computed(() => teamCode.value ? getTeamById(teamCode.value) : null)
+// 异步加载球员详情数据
+onMounted(async () => {
+  playerData.value = await getPlayerDetailById(personId)
+})
 
 // 能力值颜色
 const getAbilityColor = (val) => {
@@ -137,8 +137,8 @@ const validFields = computed(() => {
 })
 
 const goBack = () => {
-  if (teamCode.value) {
-    router.push(`/team/${teamCode.value}`)
+  if (teamCode) {
+    router.push(`/team/${teamCode}`)
   } else {
     router.back()
   }
@@ -158,7 +158,7 @@ const goBack = () => {
           <div class="header-left">
             <div class="player-avatar">
               <img v-if="playerData?.baseInfo?.logo" :src="playerData.baseInfo.logo" :alt="localPlayer?.name || playerData?.baseInfo?.name" />
-              <img v-else-if="localPlayer?.logo" :src="localPlayer.logo" :alt="localPlayer.name" />
+              <img v-else-if="localPlayer?.logo" :src="localPlayer.logo" :alt="localPlayer.name" loading="lazy" />
               <span v-else class="avatar-text">{{ (localPlayer?.name || '?')[0] }}</span>
             </div>
             <div class="player-value" v-if="playerData?.baseInfo?.marketValue">
@@ -179,7 +179,7 @@ const goBack = () => {
             </div>
             <div class="player-meta">
               <div class="meta-item" v-if="playerData?.baseInfo?.nationality || team">
-                <img v-if="playerData?.baseInfo?.nationalityLogo" :src="playerData.baseInfo.nationalityLogo" class="meta-flag" />
+                <img v-if="playerData?.baseInfo?.nationalityLogo" :src="playerData.baseInfo.nationalityLogo" loading="lazy" class="meta-flag" />
                 <span v-else-if="team?.logo"><img :src="team.logo" class="meta-flag" /></span>
                 <span>{{ playerData?.baseInfo?.nationality || team?.name }}</span>
               </div>
@@ -197,7 +197,7 @@ const goBack = () => {
               </div>
             </div>
             <div class="player-club" v-if="playerData?.baseInfo?.teamInfo">
-              <img v-if="playerData.baseInfo.teamInfo.teamLogo" :src="playerData.baseInfo.teamInfo.teamLogo" class="club-logo" />
+              <img v-if="playerData.baseInfo.teamInfo.teamLogo" :src="playerData.baseInfo.teamInfo.teamLogo" loading="lazy" class="club-logo" />
               <span>{{ playerData.baseInfo.teamInfo.teamName }}</span>
               <span class="club-number" v-if="playerData.baseInfo.teamInfo.shirtNumber">{{ playerData.baseInfo.teamInfo.shirtNumber }}号</span>
             </div>
@@ -388,7 +388,7 @@ const goBack = () => {
                 <td>{{ stat.season }}</td>
                 <td>
                   <div class="stat-team">
-                    <img v-if="stat.teamLogo" :src="stat.teamLogo" class="stat-team-logo" />
+                    <img v-if="stat.teamLogo" :src="stat.teamLogo" loading="lazy" class="stat-team-logo" />
                     <span>{{ stat.team }}</span>
                   </div>
                 </td>
@@ -409,7 +409,7 @@ const goBack = () => {
         <SectionTitle title="荣誉" accent />
         <div class="honor-list">
           <div v-for="honor in playerData.honorInfo" :key="honor.honor_id" class="honor-item">
-            <img v-if="honor.logo" :src="honor.logo" class="honor-logo" />
+            <img v-if="honor.logo" :src="honor.logo" loading="lazy" class="honor-logo" />
             <div class="honor-info">
               <span class="honor-name">{{ honor.name }}</span>
               <span class="honor-times">x{{ honor.times }}</span>
@@ -426,7 +426,7 @@ const goBack = () => {
             <div class="transfer-date">{{ t.date }}</div>
             <div class="transfer-body">
               <div class="transfer-club">
-                <img v-if="t.fromLogo" :src="t.fromLogo" class="transfer-logo" />
+                <img v-if="t.fromLogo" :src="t.fromLogo" loading="lazy" class="transfer-logo" />
                 <span>{{ t.fromClub }}</span>
               </div>
               <div class="transfer-arrow">
@@ -434,7 +434,7 @@ const goBack = () => {
                 <span class="arrow-icon">→</span>
               </div>
               <div class="transfer-club">
-                <img v-if="t.toLogo" :src="t.toLogo" class="transfer-logo" />
+                <img v-if="t.toLogo" :src="t.toLogo" loading="lazy" class="transfer-logo" />
                 <span>{{ t.toClub }}</span>
               </div>
             </div>

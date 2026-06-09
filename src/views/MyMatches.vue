@@ -7,7 +7,7 @@ import { formatDate } from '../utils/helpers'
 import MatchCard from '../components/MatchCard.vue'
 import EmptyState from '../components/EmptyState.vue'
 import LoadingState from '../components/LoadingState.vue'
-import wcLogo from '../assets/wc2026-logo.png'
+import wcLogo from '../assets/wc2026-logo.webp'
 
 const router = useRouter()
 const { isFav } = useFavorites()
@@ -66,7 +66,7 @@ onMounted(async () => {
     <section class="my-banner">
       <div class="banner-bg"></div>
       <div class="banner-content">
-        <img :src="wcLogo" alt="2026 FIFA World Cup" class="banner-logo" />
+        <img :src="wcLogo" alt="2026 FIFA World Cup" loading="lazy" class="banner-logo" />
         <div class="banner-text">
           <h1 class="banner-title">我的比赛</h1>
           <p class="banner-sub">已收藏 {{ favMatches.length }} 场比赛</p>

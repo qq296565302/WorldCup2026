@@ -1817,22 +1817,22 @@ export const getSquadByTeamId = (teamId) => {
   return squads[teamId.toUpperCase()] || null
 }
 
+// 预计算 personId -> { player, teamId } 索引，避免每次线性遍历
+const _personIndex = new Map()
+for (const [teamId, squad] of Object.entries(squads)) {
+  for (const player of squad.players) {
+    _personIndex.set(player.personId, { player, teamId })
+  }
+}
+
 // 根据 personId 查找球员
 export const getPlayerByPersonId = (personId) => {
   if (!personId) return null
-  for (const squad of Object.values(squads)) {
-    const player = squad.players.find(p => p.personId === personId)
-    if (player) return player
-  }
-  return null
+  return _personIndex.get(personId)?.player || null
 }
 
 // 根据 personId 查找球员所属队伍
 export const getTeamByPersonId = (personId) => {
   if (!personId) return null
-  for (const [teamId, squad] of Object.entries(squads)) {
-    const player = squad.players.find(p => p.personId === personId)
-    if (player) return teamId
-  }
-  return null
+  return _personIndex.get(personId)?.teamId || null
 }

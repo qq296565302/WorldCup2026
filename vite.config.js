@@ -1,8 +1,13 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import compression from 'vite-plugin-compression'
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    compression({ algorithm: 'gzip' }),
+    compression({ algorithm: 'brotliCompress', ext: '.br' })
+  ],
   server: {
     host: '0.0.0.0',
     port: 3000,
@@ -26,6 +31,21 @@ export default defineConfig({
         secure: true,
         headers: {
           Referer: 'https://www.dongqiudi.com/'
+        }
+      }
+    }
+  },
+  build: {
+    chunkSizeWarningLimit: 500,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/vue') || id.includes('node_modules/vue-router')) {
+            return 'vendor-vue'
+          }
+          if (id.includes('node_modules/axios')) {
+            return 'vendor-http'
+          }
         }
       }
     }

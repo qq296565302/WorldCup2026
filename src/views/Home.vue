@@ -8,7 +8,7 @@ import TabBar from '../components/TabBar.vue'
 import LoadingState from '../components/LoadingState.vue'
 import EmptyState from '../components/EmptyState.vue'
 import MatchCard from '../components/MatchCard.vue'
-import wcLogo from '../assets/wc2026-logo.png'
+import wcLogo from '../assets/wc2026-logo.webp'
 
 const router = useRouter()
 const { isFav, shouldAlertToday, markAlerted } = useFavorites()
@@ -92,7 +92,7 @@ onMounted(async () => {
     <section class="schedule-banner">
       <div class="banner-bg"></div>
       <div class="banner-content">
-        <img :src="wcLogo" alt="2026 FIFA World Cup" class="banner-logo" />
+        <img :src="wcLogo" alt="2026 FIFA World Cup" loading="lazy" class="banner-logo" />
         <div class="banner-text">
           <h1 class="banner-title">赛程总览</h1>
           <p class="banner-sub">104 场比赛 · 美国·加拿大·墨西哥</p>

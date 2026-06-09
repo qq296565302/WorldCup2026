@@ -69,7 +69,7 @@ onMounted(async () => {
       </div>
       <div class="header-content">
         <div class="team-flag">
-          <img v-if="team.logo" :src="team.logo" :alt="team.name" class="team-flag-img" />
+          <img v-if="team.logo" :src="team.logo" :alt="team.name" loading="lazy" class="team-flag-img" />
           <span v-else>{{ team.flag }}</span>
         </div>
         <h1 class="team-name">{{ team.name }}</h1>
@@ -91,7 +91,7 @@ onMounted(async () => {
         <div class="coach-list">
           <div v-for="coach in squad.coaches" :key="coach.name" class="coach-card">
             <div class="coach-avatar">
-              <img v-if="coach.logo" :src="coach.logo" :alt="coach.name" class="avatar-img" />
+              <img v-if="coach.logo" :src="coach.logo" :alt="coach.name" loading="lazy" class="avatar-img" />
               <span v-else class="avatar-icon">👤</span>
             </div>
             <div class="coach-info">
@@ -127,7 +127,7 @@ onMounted(async () => {
             >
               <div class="player-number">{{ player.number }}</div>
               <div class="player-avatar">
-                <img v-if="player.logo" :src="player.logo" :alt="player.name" class="player-avatar-img" />
+                <img v-if="player.logo" :src="player.logo" :alt="player.name" loading="lazy" class="player-avatar-img" />
                 <span v-else class="player-avatar-placeholder">{{ player.name[0] }}</span>
               </div>
               <div class="player-info">
