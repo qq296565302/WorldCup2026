@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { getTeamById } from '../data/teams'
 import { getStageName } from '../utils/helpers'
+import { useFavorites } from '../composables/useFavorites'
 import StatusBadge from './StatusBadge.vue'
 
 const props = defineProps({
@@ -11,6 +12,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['click'])
+
+const { isFav, toggle } = useFavorites()
 
 const homeTeam = computed(() =>
   getTeamById(props.match.home_team) || { name: props.match.home_name, flag: '' }
@@ -34,6 +37,13 @@ const isFinished = computed(() => {
   const s = props.match.status
   return ['finished', 'FT'].includes(s)
 })
+
+const favorited = computed(() => isFav(props.match.num))
+
+const onFavClick = (e) => {
+  e.stopPropagation()
+  toggle(props.match.num)
+}
 </script>
 
 <template>
@@ -46,6 +56,12 @@ const isFinished = computed(() => {
     <div class="card-top">
       <span v-if="showStage" class="stage-tag">{{ stageText }}</span>
       <span class="match-time">{{ match.time }}</span>
+      <button class="fav-btn" :class="{ active: favorited }" @click="onFavClick">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path v-if="favorited" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor" stroke="currentColor"/>
+          <path v-else d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+      </button>
     </div>
 
     <!-- 对阵区域 -->
@@ -142,6 +158,36 @@ const isFinished = computed(() => {
   font-size: var(--wc-font-size-sm);
   color: var(--wc-text-secondary);
   font-weight: var(--wc-font-weight-medium);
+  flex: 1;
+  text-align: center;
+}
+
+.fav-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--wc-text-muted);
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s;
+  border-radius: var(--wc-radius-sm);
+}
+
+.fav-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.fav-btn:active {
+  transform: scale(1.2);
+}
+
+.fav-btn.active {
+  color: #f6ad55;
 }
 
 /* 对阵区域 */

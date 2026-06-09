@@ -75,12 +75,20 @@ export const teams = [
   { id: 'PAN', name: '巴拿马', nameEn: 'Panama', group: 'L', flag: '🇵🇦', confederation: 'CONCACAF', rank: 58, logo: 'https://sd.qunliao.info/fastdfs3/M00/B5/7B/ChOxM1xC2OeAS3ajAAADqpnHFS0036.png' }
 ]
 
+// wheniskickoff API 使用的 IOC 代码 → FIFA 代码映射
+const codeAliases = {
+  URY: 'URU', // 乌拉圭
+  CIV: 'CIV', // 科特迪瓦 (IOC=CIV, FIFA=CIV，一致)
+}
+
 // 根据 ID 获取队伍
 export const getTeamById = (id) => {
   if (!id) return null
-  const upper = id.toUpperCase()
-  // 先按 FIFA 代码匹配
-  const byCode = teams.find(t => t.id === upper)
+  let lookup = id.toUpperCase()
+  // 先查别名表
+  if (codeAliases[lookup]) lookup = codeAliases[lookup]
+  // 按 FIFA 代码匹配
+  const byCode = teams.find(t => t.id === lookup)
   if (byCode) return byCode
   // 再按英文名匹配（赛程数据可能用英文名）
   return teams.find(t => t.nameEn && t.nameEn.toLowerCase() === id.toLowerCase())

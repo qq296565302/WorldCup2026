@@ -36,6 +36,12 @@ const routes = [
     name: 'Standings',
     component: () => import('../views/Standings.vue'),
     meta: { title: '积分榜' }
+  },
+  {
+    path: '/my-matches',
+    name: 'MyMatches',
+    component: () => import('../views/MyMatches.vue'),
+    meta: { title: '我的比赛' }
   }
 ]
 

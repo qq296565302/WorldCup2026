@@ -33,7 +33,8 @@ export const API_CONFIG = {
       matchDetail: '/magicball/v1/match/app/detail',
       matchOverview: '/api/data/overview/match',
       matchLineup: '/sport-data/soccer/biz/dqd/v1/match/lineup',
-      matchAnalysis: '/api/data/match/pre_analysis_v1'
+      matchAnalysis: '/api/data/match/pre_analysis_v1',
+      matchOdds: '/sport-data/soccer/biz/dqd/v1/match/odds/index'
     }
   },
 

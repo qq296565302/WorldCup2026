@@ -7,6 +7,7 @@ const route = useRoute()
 
 const tabs = [
   { path: '/', label: '赛程', icon: 'calendar' },
+  { path: '/my-matches', label: '我的', icon: 'star' },
   { path: '/teams', label: '队伍', icon: 'team' },
   { path: '/standings', label: '积分榜', icon: 'chart' }
 ]
@@ -14,6 +15,7 @@ const tabs = [
 const activeTab = computed(() => {
   if (route.path.startsWith('/team') || route.path.startsWith('/player')) return '/teams'
   if (route.path.startsWith('/match')) return '/'
+  if (route.path.startsWith('/my-matches')) return '/my-matches'
   return route.path
 })
 
@@ -43,6 +45,9 @@ const navigate = (path) => {
           <line x1="16" y1="2" x2="16" y2="6"/>
           <line x1="8" y1="2" x2="8" y2="6"/>
           <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        <svg v-else-if="tab.icon === 'star'" class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
         </svg>
         <svg v-else-if="tab.icon === 'team'" class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
