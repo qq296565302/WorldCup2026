@@ -52,10 +52,12 @@ const onFavClick = (e) => {
     :class="{ 'is-live': isLive, 'is-finished': isFinished, compact }"
     @click="emit('click', match.id)"
   >
-    <!-- 顶部：阶段标签 + 时间 -->
-    <div class="card-top">
-      <span v-if="showStage" class="stage-tag">{{ stageText }}</span>
-      <span class="match-time">{{ match.time }}</span>
+    <!-- 顶部信息栏 -->
+    <div class="card-header">
+      <div class="header-left">
+        <span v-if="showStage" class="stage-tag">{{ stageText }}</span>
+        <span class="match-time">{{ match.time }}</span>
+      </div>
       <button class="fav-btn" :class="{ active: favorited }" @click="onFavClick">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path v-if="favorited" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor" stroke="currentColor"/>
@@ -64,47 +66,45 @@ const onFavClick = (e) => {
       </button>
     </div>
 
-    <!-- 对阵区域 -->
-    <div class="card-body">
-      <!-- 主队 -->
-      <div class="team-col home">
-        <div class="team-flag">
-          <img v-if="homeTeam.logo" :src="homeTeam.logo" :alt="homeTeam.name" loading="lazy" class="flag-img" />
-          <span v-else>{{ homeTeam.flag }}</span>
+    <!-- 对阵主体 -->
+    <div class="match-body">
+      <div class="team-side home">
+        <div class="team-logo-wrap">
+          <img v-if="homeTeam.logo" :src="homeTeam.logo" :alt="homeTeam.name" loading="lazy" class="team-logo" />
+          <span v-else class="team-flag-text">{{ homeTeam.flag }}</span>
         </div>
-        <div class="team-name">{{ homeTeam.name }}</div>
+        <span class="team-name">{{ homeTeam.name }}</span>
       </div>
 
-      <!-- 比分 -->
-      <div class="score-col">
-        <div class="score-box">
-          <span class="score-num">{{ match.home_score ?? '-' }}</span>
-          <span class="score-vs">VS</span>
-          <span class="score-num">{{ match.away_score ?? '-' }}</span>
+      <div class="score-section">
+        <div class="score-display">
+          <span class="score-num" :class="{ 'is-live': isLive }">{{ match.home_score ?? '-' }}</span>
+          <span class="score-sep">:</span>
+          <span class="score-num" :class="{ 'is-live': isLive }">{{ match.away_score ?? '-' }}</span>
         </div>
         <StatusBadge :status="match.status" />
       </div>
 
-      <!-- 客队 -->
-      <div class="team-col away">
-        <div class="team-flag">
-          <img v-if="awayTeam.logo" :src="awayTeam.logo" :alt="awayTeam.name" loading="lazy" class="flag-img" />
-          <span v-else>{{ awayTeam.flag }}</span>
+      <div class="team-side away">
+        <div class="team-logo-wrap">
+          <img v-if="awayTeam.logo" :src="awayTeam.logo" :alt="awayTeam.name" loading="lazy" class="team-logo" />
+          <span v-else class="team-flag-text">{{ awayTeam.flag }}</span>
         </div>
-        <div class="team-name">{{ awayTeam.name }}</div>
+        <span class="team-name">{{ awayTeam.name }}</span>
       </div>
     </div>
 
-    <!-- 底部：场馆信息 -->
-    <div v-if="match.venue_name && !compact" class="card-bottom">
-      <span class="venue-icon">🏟️</span>
+    <!-- 底部场馆 -->
+    <div v-if="match.venue_name && !compact" class="card-footer">
+      <svg class="venue-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M3 21V7l9-4 9 4v14"/>
+        <path d="M9 21V12h6v9"/>
+      </svg>
       <span class="venue-name">{{ match.venue_name }}</span>
     </div>
 
-    <!-- 直播状态动画 -->
-    <div v-if="isLive" class="live-indicator">
-      <span class="live-dot"></span>
-    </div>
+    <!-- 直播光效 -->
+    <div v-if="isLive" class="live-glow"></div>
   </div>
 </template>
 
@@ -112,59 +112,64 @@ const onFavClick = (e) => {
 .match-card {
   background: var(--wc-surface);
   border-radius: var(--wc-radius-xl);
-  padding: var(--wc-space-md);
+  padding: var(--wc-space-lg);
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
-  border: 1px solid var(--wc-border-light);
+  border: 1px solid var(--wc-border);
+  animation: cardEnter 0.4s ease both;
 }
 
 .match-card:active {
   transform: scale(0.97);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  background: var(--wc-surface-active);
+  border-color: var(--wc-border-glow);
 }
 
-/* 直播状态 */
 .match-card.is-live {
-  border-color: var(--wc-primary);
-  background: linear-gradient(135deg, #fff5f5, #fff);
+  border-color: rgba(255, 71, 87, 0.3);
+  box-shadow: 0 0 24px rgba(255, 71, 87, 0.1), inset 0 0 0 1px rgba(255, 71, 87, 0.1);
 }
 
-/* 已结束状态 */
 .match-card.is-finished {
-  opacity: 0.9;
+  opacity: 0.85;
 }
 
-/* 顶部 */
-.card-top {
+/* 顶部信息栏 */
+.card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--wc-space-md);
+  margin-bottom: var(--wc-space-lg);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--wc-space-sm);
 }
 
 .stage-tag {
   font-size: var(--wc-font-size-xs);
   color: var(--wc-primary);
-  font-weight: var(--wc-font-weight-semibold);
-  background: var(--wc-primary-light);
-  padding: 2px var(--wc-space-sm);
+  font-weight: var(--wc-font-weight-bold);
+  background: var(--wc-primary-subtle);
+  padding: 3px 8px;
   border-radius: var(--wc-radius-full);
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
 }
 
 .match-time {
   font-size: var(--wc-font-size-sm);
-  color: var(--wc-text-secondary);
+  color: var(--wc-text-muted);
   font-weight: var(--wc-font-weight-medium);
-  flex: 1;
-  text-align: center;
 }
 
 .fav-btn {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -174,114 +179,133 @@ const onFavClick = (e) => {
   cursor: pointer;
   padding: 0;
   transition: all 0.2s;
-  border-radius: var(--wc-radius-sm);
+  border-radius: var(--wc-radius-full);
 }
 
 .fav-btn svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 
 .fav-btn:active {
-  transform: scale(1.2);
+  transform: scale(1.3);
 }
 
 .fav-btn.active {
-  color: #f6ad55;
+  color: var(--wc-warning);
 }
 
-/* 对阵区域 */
-.card-body {
+/* 对阵主体 */
+.match-body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--wc-space-sm);
+  gap: var(--wc-space-md);
 }
 
-.team-col {
+.team-side {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  text-align: center;
+  gap: var(--wc-space-sm);
   min-width: 0;
 }
 
-.team-flag {
-  width: 32px;
-  height: 32px;
-  margin-bottom: var(--wc-space-xs);
+.team-side.away {
+  order: 3;
+}
+
+.team-logo-wrap {
+  width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--wc-radius-lg);
+  padding: 4px;
 }
 
-.flag-img {
-  width: 32px;
-  height: 32px;
+.team-logo {
+  width: 40px;
+  height: 40px;
   object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.team-flag-text {
+  font-size: 28px;
 }
 
 .team-name {
-  font-size: var(--wc-font-size-md);
+  font-size: var(--wc-font-size-base);
   font-weight: var(--wc-font-weight-semibold);
   color: var(--wc-text-primary);
+  text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+  line-height: 1.2;
 }
 
-/* 比分 */
-.score-col {
+/* 比分区域 */
+.score-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--wc-space-xs);
-  min-width: 80px;
+  gap: var(--wc-space-sm);
+  min-width: 88px;
+  order: 2;
 }
 
-.score-box {
+.score-display {
   display: flex;
   align-items: center;
-  gap: var(--wc-space-sm);
-  background: var(--wc-gray-50);
-  padding: var(--wc-space-xs) var(--wc-space-md);
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: var(--wc-space-sm) var(--wc-space-lg);
   border-radius: var(--wc-radius-lg);
 }
 
 .score-num {
-  font-size: var(--wc-font-size-3xl);
+  font-size: var(--wc-font-size-4xl);
   font-weight: var(--wc-font-weight-black);
   color: var(--wc-text-primary);
-  min-width: 24px;
+  min-width: 28px;
   text-align: center;
+  line-height: 1;
+  letter-spacing: -1px;
 }
 
-.is-live .score-num {
+.score-num.is-live {
   color: var(--wc-primary);
+  text-shadow: 0 0 12px var(--wc-primary-glow);
 }
 
-.score-vs {
-  font-size: var(--wc-font-size-xs);
+.score-sep {
+  font-size: var(--wc-font-size-xl);
   color: var(--wc-text-muted);
   font-weight: var(--wc-font-weight-bold);
 }
 
 /* 底部场馆 */
-.card-bottom {
+.card-footer {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--wc-space-xs);
-  margin-top: var(--wc-space-md);
-  padding-top: var(--wc-space-sm);
+  gap: 6px;
+  margin-top: var(--wc-space-lg);
+  padding-top: var(--wc-space-md);
   border-top: 1px solid var(--wc-border-light);
 }
 
 .venue-icon {
-  font-size: 12px;
+  width: 14px;
+  height: 14px;
+  color: var(--wc-text-muted);
+  flex-shrink: 0;
 }
 
 .venue-name {
@@ -289,44 +313,35 @@ const onFavClick = (e) => {
   color: var(--wc-text-muted);
 }
 
-/* 直播指示器 */
-.live-indicator {
+/* 直播光效 */
+.live-glow {
   position: absolute;
-  top: var(--wc-space-sm);
-  right: var(--wc-space-sm);
-}
-
-.live-dot {
-  display: block;
-  width: 8px;
-  height: 8px;
-  background: var(--wc-primary);
-  border-radius: var(--wc-radius-full);
-  animation: livePulse 1.5s ease-in-out infinite;
-}
-
-@keyframes livePulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.2); }
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 71, 87, 0.06), transparent 50%);
+  pointer-events: none;
+  animation: glowPulse 3s ease-in-out infinite;
 }
 
 /* 紧凑模式 */
 .compact {
-  padding: var(--wc-space-sm) var(--wc-space-md);
+  padding: var(--wc-space-md);
 }
 
-.compact .card-top {
+.compact .card-header {
   margin-bottom: var(--wc-space-sm);
 }
 
-.compact .team-flag {
-  width: 24px;
-  height: 24px;
+.compact .team-logo-wrap {
+  width: 36px;
+  height: 36px;
 }
 
-.compact .flag-img {
-  width: 24px;
-  height: 24px;
+.compact .team-logo {
+  width: 28px;
+  height: 28px;
 }
 
 .compact .team-name {
@@ -334,10 +349,10 @@ const onFavClick = (e) => {
 }
 
 .compact .score-num {
-  font-size: var(--wc-font-size-2xl);
+  font-size: var(--wc-font-size-3xl);
 }
 
-.compact .score-box {
-  padding: var(--wc-space-xs) var(--wc-space-sm);
+.compact .score-display {
+  padding: var(--wc-space-xs) var(--wc-space-md);
 }
 </style>

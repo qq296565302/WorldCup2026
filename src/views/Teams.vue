@@ -19,26 +19,31 @@ const goToTeam = (teamId) => {
 
 <template>
   <div class="page-container">
-    <section class="teams-banner">
-      <div class="banner-bg"></div>
-      <div class="banner-content">
-        <img :src="wcLogo" alt="2026 FIFA World Cup" loading="lazy" class="banner-logo" />
-        <div class="banner-text">
-          <h1 class="banner-title">参赛队伍</h1>
-          <p class="banner-sub">48 支队伍 · 美国·加拿大·墨西哥</p>
+    <section class="hero-banner">
+      <div class="hero-bg"></div>
+      <div class="hero-content">
+        <div class="hero-top">
+          <img :src="wcLogo" alt="2026 FIFA World Cup" loading="lazy" class="hero-logo" />
+          <div class="hero-text">
+            <h1 class="hero-title">参赛队伍</h1>
+            <p class="hero-subtitle">48 支队伍 · 美国·加拿大·墨西哥</p>
+          </div>
         </div>
       </div>
     </section>
 
     <div class="teams-content">
       <div v-for="g in groupedTeams" :key="g.group" class="group-section">
-        <div class="group-header">{{ g.group }}组</div>
+        <div class="group-header">
+          <span class="group-label">{{ g.group }}组</span>
+          <span class="group-count">{{ g.teams.length }} 队</span>
+        </div>
         <div class="team-grid">
           <div
             v-for="(team, index) in g.teams"
             :key="team.id"
             class="team-card"
-            :style="{ animationDelay: `${index * 60}ms` }"
+            :style="{ animationDelay: `${index * 50}ms` }"
             @click="goToTeam(team.id)"
           >
             <div class="card-flag">
@@ -53,11 +58,6 @@ const goToTeam = (teamId) => {
               <span class="rank-num">{{ team.rank }}</span>
               <span class="rank-label">FIFA</span>
             </div>
-            <div class="card-arrow">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="9 18 15 12 9 6"/>
-              </svg>
-            </div>
           </div>
         </div>
       </div>
@@ -66,178 +66,186 @@ const goToTeam = (teamId) => {
 </template>
 
 <style scoped>
-/* Banner */
-.teams-banner {
+/* Hero Banner */
+.hero-banner {
   position: relative;
-  background: linear-gradient(135deg, #1a0a28 0%, #2d1544 40%, #3d1f5c 100%);
-  color: white;
-  padding: var(--wc-space-2xl) var(--wc-space-lg) var(--wc-space-xl);
+  padding: var(--wc-space-3xl) var(--wc-space-lg) var(--wc-space-2xl);
   overflow: hidden;
 }
 
-.banner-bg {
+.hero-bg {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse at 80% 20%, rgba(168,85,247,0.2), transparent 50%),
-    radial-gradient(ellipse at 20% 80%, rgba(59,130,246,0.12), transparent 50%);
+    linear-gradient(180deg, rgba(15, 25, 35, 0) 0%, var(--wc-bg) 100%),
+    radial-gradient(ellipse at 60% 30%, rgba(77, 171, 247, 0.1), transparent 60%),
+    radial-gradient(ellipse at 30% 70%, rgba(77, 171, 247, 0.06), transparent 60%);
 }
 
-.banner-content {
+.hero-content {
   position: relative;
   z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: var(--wc-space-lg);
 }
 
-.banner-logo {
+.hero-top {
+  display: flex;
+  align-items: center;
+  gap: var(--wc-space-xl);
+}
+
+.hero-logo {
   width: 72px;
   height: auto;
   flex-shrink: 0;
-  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
 }
 
-.banner-text {
+.hero-text {
   flex: 1;
 }
 
-.banner-title {
-  font-size: var(--wc-font-size-3xl);
+.hero-title {
+  font-size: var(--wc-font-size-4xl);
   font-weight: var(--wc-font-weight-black);
+  color: var(--wc-text-primary);
   margin: 0;
   letter-spacing: -0.5px;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  line-height: 1.1;
 }
 
-.banner-sub {
+.hero-subtitle {
   font-size: var(--wc-font-size-sm);
-  opacity: 0.7;
+  color: var(--wc-text-muted);
   margin-top: 4px;
+  font-weight: var(--wc-font-weight-medium);
 }
 
+/* 内容区 */
 .teams-content {
-  padding: var(--wc-space-md);
+  padding: var(--wc-space-lg) var(--wc-space-md);
 }
 
 .group-section {
-  margin-bottom: var(--wc-space-lg);
+  margin-bottom: var(--wc-space-2xl);
 }
 
 .group-section:last-child {
   margin-bottom: 0;
 }
 
+/* 分组头部 */
 .group-header {
-  font-size: var(--wc-font-size-sm);
-  font-weight: var(--wc-font-weight-bold);
-  color: var(--wc-secondary);
-  padding: var(--wc-space-xs) var(--wc-space-sm);
-  margin-bottom: var(--wc-space-sm);
-  background: var(--wc-secondary-light);
-  border-radius: var(--wc-radius-md);
-  display: inline-block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--wc-space-md);
+  padding: 0 var(--wc-space-xs);
 }
 
+.group-label {
+  font-size: var(--wc-font-size-base);
+  font-weight: var(--wc-font-weight-bold);
+  color: var(--wc-secondary);
+  padding: var(--wc-space-xs) var(--wc-space-md);
+  background: var(--wc-secondary-subtle);
+  border-radius: var(--wc-radius-full);
+}
+
+.group-count {
+  font-size: var(--wc-font-size-xs);
+  color: var(--wc-text-muted);
+}
+
+/* 2 列网格 */
 .team-grid {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--wc-space-sm);
 }
 
 .team-card {
   display: flex;
+  flex-direction: column;
   align-items: center;
+  gap: var(--wc-space-sm);
   background: var(--wc-surface);
+  border: 1px solid var(--wc-border);
   border-radius: var(--wc-radius-xl);
-  padding: var(--wc-space-md) var(--wc-space-lg);
+  padding: var(--wc-space-lg) var(--wc-space-md);
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  border: 1px solid var(--wc-border-light);
-  animation: slideInUp 0.4s ease forwards;
-  opacity: 0;
-  transform: translateY(10px);
-}
-
-@keyframes slideInUp {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  animation: cardEnter 0.4s ease both;
+  text-align: center;
 }
 
 .team-card:active {
-  transform: scale(0.98);
-  background: var(--wc-gray-50);
+  transform: scale(0.96);
+  background: var(--wc-surface-active);
+  border-color: var(--wc-secondary-glow);
 }
 
 .card-flag {
-  width: 36px;
-  height: 36px;
-  margin-right: var(--wc-space-md);
+  width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--wc-radius-lg);
+  padding: 4px;
 }
 
 .flag-img {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   object-fit: contain;
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
 
 .card-info {
-  flex: 1;
   min-width: 0;
+  width: 100%;
 }
 
 .card-name {
-  font-size: var(--wc-font-size-lg);
+  font-size: var(--wc-font-size-base);
   font-weight: var(--wc-font-weight-semibold);
   color: var(--wc-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .card-name-en {
-  font-size: var(--wc-font-size-sm);
+  font-size: 10px;
   color: var(--wc-text-muted);
   margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .card-rank {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  margin-right: var(--wc-space-md);
-  padding: var(--wc-space-xs) var(--wc-space-sm);
-  background: var(--wc-secondary-light);
-  border-radius: var(--wc-radius-md);
+  gap: 3px;
+  padding: 3px 8px;
+  background: var(--wc-secondary-subtle);
+  border-radius: var(--wc-radius-full);
 }
 
 .rank-num {
-  font-size: var(--wc-font-size-lg);
+  font-size: var(--wc-font-size-sm);
   font-weight: var(--wc-font-weight-bold);
   color: var(--wc-secondary);
   line-height: 1;
 }
 
 .rank-label {
-  font-size: 9px;
+  font-size: 8px;
   color: var(--wc-secondary);
   font-weight: var(--wc-font-weight-semibold);
   text-transform: uppercase;
-}
-
-.card-arrow {
-  width: 20px;
-  height: 20px;
-  color: var(--wc-gray-300);
-  transition: transform var(--wc-transition-fast);
-}
-
-.team-card:active .card-arrow {
-  transform: translateX(4px);
+  opacity: 0.7;
 }
 </style>

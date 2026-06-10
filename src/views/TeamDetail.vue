@@ -188,7 +188,7 @@ onMounted(async () => {
 <style scoped>
 .team-header {
   position: relative;
-  background: linear-gradient(135deg, var(--wc-dark), var(--wc-darker));
+  background: linear-gradient(135deg, var(--wc-bg), var(--wc-bg-elevated));
   color: white;
   padding: var(--wc-space-4xl) var(--wc-space-lg) var(--wc-space-2xl);
   overflow: hidden;
@@ -330,14 +330,15 @@ onMounted(async () => {
   background: var(--wc-surface);
   border-radius: var(--wc-radius-xl);
   padding: var(--wc-space-md) var(--wc-space-lg);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--wc-shadow-sm);
+  border: 1px solid var(--wc-border);
 }
 
 .coach-avatar {
   width: 56px;
   height: 56px;
   border-radius: var(--wc-radius-full);
-  background: var(--wc-gray-100);
+  background: rgba(255,255,255,0.06);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -381,14 +382,14 @@ onMounted(async () => {
 .meta-tag {
   font-size: var(--wc-font-size-xs);
   color: var(--wc-text-muted);
-  background: var(--wc-gray-100);
+  background: rgba(255,255,255,0.06);
   padding: 2px var(--wc-space-sm);
   border-radius: var(--wc-radius-full);
 }
 
 .meta-tag.coach-type {
   color: var(--wc-primary);
-  background: var(--wc-primary-light);
+  background: var(--wc-primary-subtle);
   font-weight: var(--wc-font-weight-semibold);
 }
 
@@ -422,7 +423,7 @@ onMounted(async () => {
 .position-count {
   font-size: var(--wc-font-size-xs);
   color: var(--wc-text-muted);
-  background: var(--wc-gray-100);
+  background: rgba(255,255,255,0.06);
   padding: 1px var(--wc-space-sm);
   border-radius: var(--wc-radius-full);
 }
@@ -438,6 +439,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   background: var(--wc-surface);
+  border: 1px solid var(--wc-border);
   border-radius: var(--wc-radius-lg);
   padding: var(--wc-space-md);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
@@ -453,7 +455,7 @@ onMounted(async () => {
 
 .player-card.clickable:active {
   transform: scale(0.98);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--wc-shadow-sm);
 }
 
 @keyframes slideIn {
@@ -482,7 +484,7 @@ onMounted(async () => {
   width: 40px;
   height: 40px;
   border-radius: var(--wc-radius-full);
-  background: var(--wc-gray-100);
+  background: rgba(255,255,255,0.06);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -549,7 +551,7 @@ onMounted(async () => {
 .player-club {
   font-size: var(--wc-font-size-xs);
   color: var(--wc-text-muted);
-  background: var(--wc-gray-100);
+  background: rgba(255,255,255,0.06);
   padding: 1px var(--wc-space-sm);
   border-radius: var(--wc-radius-full);
   white-space: nowrap;

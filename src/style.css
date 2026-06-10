@@ -1,40 +1,63 @@
-/* ============ 设计 Token 系统 ============ */
+/* ============ 深色主题设计 Token 系统 ============ */
 :root {
-  /* 品牌色 */
-  --wc-primary: #e53e3e;
-  --wc-primary-dark: #c53030;
-  --wc-primary-light: #fef2f2;
-  --wc-secondary: #2b6cb0;
-  --wc-secondary-dark: #1a4e8a;
-  --wc-secondary-light: #eff6ff;
-  --wc-accent: #38a169;
-  --wc-accent-dark: #276749;
-  --wc-accent-light: #f0fdf4;
-  --wc-dark: #1e3a5f;
-  --wc-darker: #0f2744;
+  /* 深色背景体系 */
+  --wc-bg: #0f1923;
+  --wc-bg-elevated: #152232;
+  --wc-surface: #1a2634;
+  --wc-surface-hover: #213040;
+  --wc-surface-active: #243447;
+  --wc-surface-overlay: rgba(255, 255, 255, 0.04);
 
-  /* 灰度色阶 */
-  --wc-gray-50: #f9fafb;
-  --wc-gray-100: #f3f4f6;
-  --wc-gray-200: #e5e7eb;
-  --wc-gray-300: #d1d5db;
-  --wc-gray-400: #9ca3af;
-  --wc-gray-500: #6b7280;
-  --wc-gray-600: #4b5563;
-  --wc-gray-700: #374151;
-  --wc-gray-800: #1f2937;
-  --wc-gray-900: #1a1a1a;
+  /* 品牌色（高饱和度亮色，适合深色背景） */
+  --wc-primary: #ff4757;
+  --wc-primary-dark: #e03346;
+  --wc-primary-glow: rgba(255, 71, 87, 0.2);
+  --wc-primary-subtle: rgba(255, 71, 87, 0.1);
 
-  /* 语义色 */
-  --wc-bg: #f5f5f5;
-  --wc-surface: #ffffff;
-  --wc-text-primary: var(--wc-gray-800);
-  --wc-text-secondary: var(--wc-gray-500);
-  --wc-text-muted: var(--wc-gray-400);
-  --wc-border: var(--wc-gray-200);
-  --wc-border-light: var(--wc-gray-100);
+  --wc-secondary: #4dabf7;
+  --wc-secondary-dark: #339af0;
+  --wc-secondary-glow: rgba(77, 171, 247, 0.2);
+  --wc-secondary-subtle: rgba(77, 171, 247, 0.1);
 
-  /* 间距 */
+  --wc-accent: #51cf66;
+  --wc-accent-dark: #40c057;
+  --wc-accent-glow: rgba(81, 207, 102, 0.2);
+  --wc-accent-subtle: rgba(81, 207, 102, 0.1);
+
+  --wc-warning: #fcc419;
+  --wc-warning-subtle: rgba(252, 196, 25, 0.1);
+
+  /* 渐变色 */
+  --wc-gradient-hero: linear-gradient(135deg, #0f1923 0%, #1a2634 50%, #243447 100%);
+  --wc-gradient-primary: linear-gradient(135deg, #ff4757 0%, #c0392b 100%);
+  --wc-gradient-blue: linear-gradient(135deg, #4dabf7 0%, #1e6fd9 100%);
+  --wc-gradient-glow: radial-gradient(ellipse at 80% 20%, rgba(77, 171, 247, 0.15), transparent 50%),
+                      radial-gradient(ellipse at 20% 80%, rgba(255, 71, 87, 0.1), transparent 50%);
+
+  /* 文字色 */
+  --wc-text-primary: #e8edf2;
+  --wc-text-secondary: #8899aa;
+  --wc-text-muted: #556677;
+  --wc-text-inverse: #0f1923;
+
+  /* 边框 */
+  --wc-border: rgba(255, 255, 255, 0.08);
+  --wc-border-light: rgba(255, 255, 255, 0.04);
+  --wc-border-glow: rgba(255, 255, 255, 0.12);
+
+  /* 灰度色阶（深色版本） */
+  --wc-gray-50: #243447;
+  --wc-gray-100: #1e2d3d;
+  --wc-gray-200: rgba(255, 255, 255, 0.06);
+  --wc-gray-300: rgba(255, 255, 255, 0.1);
+  --wc-gray-400: #556677;
+  --wc-gray-500: #8899aa;
+  --wc-gray-600: #a0b0c0;
+  --wc-gray-700: #c0ccd8;
+  --wc-gray-800: #e0e8f0;
+  --wc-gray-900: #e8edf2;
+
+  /* 间距（4px 基准网格） */
   --wc-space-xs: 4px;
   --wc-space-sm: 8px;
   --wc-space-md: 12px;
@@ -43,7 +66,12 @@
   --wc-space-2xl: 24px;
   --wc-space-3xl: 32px;
   --wc-space-4xl: 48px;
-  --wc-space-5xl: 60px;
+  --wc-space-5xl: 64px;
+
+  /* 行高 */
+  --wc-leading-tight: 1.15;
+  --wc-leading-normal: 1.5;
+  --wc-leading-relaxed: 1.65;
 
   /* 字号 */
   --wc-font-size-xs: 11px;
@@ -54,7 +82,7 @@
   --wc-font-size-xl: 16px;
   --wc-font-size-2xl: 18px;
   --wc-font-size-3xl: 20px;
-  --wc-font-size-4xl: 22px;
+  --wc-font-size-4xl: 24px;
   --wc-font-size-5xl: 32px;
   --wc-font-size-6xl: 48px;
 
@@ -71,22 +99,36 @@
   --wc-radius-lg: 10px;
   --wc-radius-xl: 12px;
   --wc-radius-2xl: 16px;
+  --wc-radius-3xl: 20px;
   --wc-radius-full: 9999px;
 
-  /* 阴影 */
-  --wc-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-  --wc-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --wc-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  /* 阴影（深色主题优化） */
+  --wc-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --wc-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --wc-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --wc-shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.6);
+  --wc-shadow-glow-primary: 0 0 20px rgba(255, 71, 87, 0.15);
+  --wc-shadow-glow-blue: 0 0 20px rgba(77, 171, 247, 0.15);
+  --wc-shadow-glow-accent: 0 0 20px rgba(81, 207, 102, 0.15);
 
   /* 过渡 */
   --wc-transition-fast: 0.15s ease;
   --wc-transition-base: 0.2s ease;
-  --wc-transition-slow: 0.3s ease;
+  --wc-transition-slow: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --wc-transition-bounce: 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --wc-transition-spring: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
   /* 布局 */
   --wc-max-width: 480px;
   --wc-header-height: 56px;
   --wc-tab-bar-height: 56px;
+
+  /* 层级 */
+  --wc-z-base: 1;
+  --wc-z-sticky: 10;
+  --wc-z-overlay: 50;
+  --wc-z-modal: 100;
+  --wc-z-toast: 200;
 }
 
 /* ============ 全局重置 ============ */
@@ -102,6 +144,9 @@ body {
   color: var(--wc-text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color-scheme: dark;
+  line-height: var(--wc-leading-normal);
+  font-size: var(--wc-font-size-base);
 }
 
 #app {
@@ -129,6 +174,44 @@ body {
   50% { opacity: 0.7; }
 }
 
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(255, 71, 87, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(255, 71, 87, 0.5); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
+}
+
+@keyframes cardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Vue 过渡类 */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity var(--wc-transition-base);
@@ -139,14 +222,36 @@ body {
   opacity: 0;
 }
 
+/* ============ 工具类 ============ */
+.skeleton {
+  background: linear-gradient(90deg,
+    rgba(255, 255, 255, 0.04) 25%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.04) 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--wc-radius-md);
+}
+
+/* 无障碍：减少动画 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* ============ 桌面端响应式 ============ */
 @media (min-width: 768px) {
   body {
-    background: var(--wc-gray-200);
+    background: #080e14;
   }
 
   .page-container {
-    box-shadow: var(--wc-shadow-lg);
+    box-shadow: var(--wc-shadow-xl);
     min-height: 100vh;
+    border-left: 1px solid var(--wc-border-light);
+    border-right: 1px solid var(--wc-border-light);
   }
 }

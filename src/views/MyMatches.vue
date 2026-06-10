@@ -111,7 +111,7 @@ onMounted(async () => {
 <style scoped>
 .my-banner {
   position: relative;
-  background: linear-gradient(135deg, #0a1a28 0%, #153044 40%, #1a4a5c 100%);
+  background: var(--wc-bg-elevated);
   color: white;
   padding: var(--wc-space-2xl) var(--wc-space-lg) var(--wc-space-xl);
   overflow: hidden;
@@ -121,8 +121,8 @@ onMounted(async () => {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse at 80% 20%, rgba(246,173,85,0.2), transparent 50%),
-    radial-gradient(ellipse at 20% 80%, rgba(64,128,255,0.15), transparent 50%);
+    radial-gradient(ellipse at 80% 20%, rgba(252,196,25,0.12), transparent 50%),
+    radial-gradient(ellipse at 20% 80%, rgba(77,171,247,0.08), transparent 50%);
 }
 
 .banner-content {
@@ -174,7 +174,8 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: var(--wc-space-md);
-  background: linear-gradient(135deg, #2b6cb0 0%, #1a4a7c 100%);
+  background: linear-gradient(135deg, rgba(77,171,247,0.15), rgba(77,171,247,0.05));
+  border: 1px solid rgba(77,171,247,0.2);
   color: white;
   padding: var(--wc-space-md) var(--wc-space-lg);
   border-radius: var(--wc-radius-lg);

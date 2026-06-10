@@ -35,20 +35,21 @@ const statusText = computed(() => getMatchStatusText(props.status))
   white-space: nowrap;
 }
 
-/* 浅色变体（用于浅色背景） */
+/* 浅色变体（用于深色背景） */
 .variant-light.status-scheduled {
-  background: var(--wc-gray-100);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--wc-text-secondary);
 }
 
 .variant-light.status-live {
-  background: var(--wc-primary-light);
+  background: var(--wc-primary-subtle);
   color: var(--wc-primary);
   animation: pulse 2s infinite;
+  box-shadow: 0 0 8px var(--wc-primary-glow);
 }
 
 .variant-light.status-finished {
-  background: var(--wc-accent-light);
+  background: var(--wc-accent-subtle);
   color: var(--wc-accent);
 }
 

@@ -32,6 +32,7 @@ defineProps({
   height: 32px;
   border: 3px solid var(--wc-border);
   border-top-color: var(--wc-primary);
+    box-shadow: 0 0 12px var(--wc-primary-glow);
   border-radius: var(--wc-radius-full);
   animation: spin 0.8s linear infinite;
 }

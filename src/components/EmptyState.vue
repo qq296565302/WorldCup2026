@@ -69,5 +69,6 @@ const handleAction = () => {
 
 .empty-action:active {
   background: var(--wc-primary-dark);
+  box-shadow: 0 4px 16px rgba(255, 71, 87, 0.3);
 }
 </style>

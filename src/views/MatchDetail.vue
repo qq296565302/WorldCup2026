@@ -716,7 +716,7 @@ const formatMatchDate = (dateStr) => {
   display: flex;
   align-items: center;
   padding: var(--wc-space-md) var(--wc-space-lg);
-  background: var(--wc-dark);
+  background: var(--wc-bg);
   color: white;
 }
 
@@ -739,7 +739,7 @@ const formatMatchDate = (dateStr) => {
 
 /* Match Main */
 .match-main {
-  background: linear-gradient(135deg, var(--wc-dark), var(--wc-darker));
+  background: linear-gradient(135deg, var(--wc-bg), var(--wc-bg-elevated));
   color: white;
   padding: var(--wc-space-xl) var(--wc-space-lg) var(--wc-space-2xl);
   text-align: center;
@@ -772,7 +772,7 @@ const formatMatchDate = (dateStr) => {
 }
 
 .team-block:active {
-  background: var(--wc-gray-50);
+  background: var(--wc-surface-active);
 }
 
 .team-logo-wrap {
@@ -924,6 +924,7 @@ const formatMatchDate = (dateStr) => {
   right: 20%;
   height: 3px;
   background: var(--wc-primary);
+  box-shadow: 0 0 8px var(--wc-primary-glow);
   border-radius: 2px;
 }
 
@@ -935,6 +936,7 @@ const formatMatchDate = (dateStr) => {
 /* Card */
 .card {
   background: var(--wc-surface);
+  border: 1px solid var(--wc-border);
   border-radius: var(--wc-radius-lg);
   padding: var(--wc-space-lg);
   margin-bottom: var(--wc-space-md);
@@ -1000,7 +1002,7 @@ const formatMatchDate = (dateStr) => {
   justify-content: space-between;
   padding: var(--wc-space-xs) 0;
   font-size: var(--wc-font-size-sm);
-  border-bottom: 1px solid var(--wc-border-light);
+  border-bottom: 1px solid var(--wc-border);
 }
 
 .info-row:last-child {
@@ -1051,7 +1053,7 @@ const formatMatchDate = (dateStr) => {
 
 .stat-bar {
   height: 6px;
-  background: var(--wc-gray-100);
+  background: rgba(255,255,255,0.08);
   border-radius: 3px;
   display: flex;
   overflow: hidden;
@@ -1082,7 +1084,7 @@ const formatMatchDate = (dateStr) => {
 .formation {
   font-size: var(--wc-font-size-xs);
   color: var(--wc-text-secondary);
-  background: var(--wc-gray-100);
+  background: rgba(255,255,255,0.08);
   padding: 1px 6px;
   border-radius: var(--wc-radius-sm);
   margin-left: auto;
@@ -1108,7 +1110,7 @@ const formatMatchDate = (dateStr) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--wc-gray-100);
+  background: rgba(255,255,255,0.08);
   border-radius: var(--wc-radius-sm);
   font-size: var(--wc-font-size-xs);
   font-weight: var(--wc-font-weight-semibold);
@@ -1131,7 +1133,7 @@ const formatMatchDate = (dateStr) => {
   display: flex;
   gap: var(--wc-space-xs);
   margin-bottom: var(--wc-space-lg);
-  background: var(--wc-gray-100);
+  background: rgba(255,255,255,0.08);
   border-radius: var(--wc-radius-lg);
   padding: 3px;
 }
@@ -1158,7 +1160,8 @@ const formatMatchDate = (dateStr) => {
 .odds-summary {
   margin-bottom: var(--wc-space-lg);
   padding: var(--wc-space-md);
-  background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+  background: var(--wc-surface);
+  border: 1px solid var(--wc-border);
   border-radius: var(--wc-radius-lg);
   border: 1px solid rgba(var(--wc-primary-rgb, 64, 128, 255), 0.1);
 }
@@ -1173,7 +1176,7 @@ const formatMatchDate = (dateStr) => {
 .summary-grid.sub-header {
   color: var(--wc-text-secondary);
   font-size: var(--wc-font-size-xs);
-  border-bottom: 1px solid var(--wc-border-light);
+  border-bottom: 1px solid var(--wc-border);
   padding-bottom: var(--wc-space-xs);
   margin-bottom: var(--wc-space-xs);
 }
@@ -1230,7 +1233,7 @@ const formatMatchDate = (dateStr) => {
 
 .odds-item {
   background: var(--wc-surface);
-  border: 1px solid var(--wc-border-light);
+  border: 1px solid var(--wc-border);
   border-radius: var(--wc-radius-lg);
   padding: var(--wc-space-md);
   transition: border-color 0.2s;
@@ -1246,7 +1249,7 @@ const formatMatchDate = (dateStr) => {
   gap: var(--wc-space-xs);
   margin-bottom: var(--wc-space-sm);
   padding-bottom: var(--wc-space-xs);
-  border-bottom: 1px solid var(--wc-border-light);
+  border-bottom: 1px solid var(--wc-border);
 }
 
 .odds-item-name {
@@ -1258,7 +1261,7 @@ const formatMatchDate = (dateStr) => {
 .odds-item-area {
   font-size: var(--wc-font-size-xs);
   color: var(--wc-text-secondary);
-  background: var(--wc-gray-100);
+  background: rgba(255,255,255,0.08);
   padding: 1px 6px;
   border-radius: var(--wc-radius-sm);
 }
@@ -1275,7 +1278,7 @@ const formatMatchDate = (dateStr) => {
   align-items: center;
   gap: 2px;
   padding: var(--wc-space-xs);
-  background: var(--wc-gray-50);
+  background: var(--wc-surface-active);
   border-radius: var(--wc-radius-md);
 }
 
@@ -1319,7 +1322,7 @@ const formatMatchDate = (dateStr) => {
 
 .history-item {
   padding: var(--wc-space-sm) 0;
-  border-bottom: 1px solid var(--wc-border-light);
+  border-bottom: 1px solid var(--wc-border);
 }
 
 .history-item:last-child {

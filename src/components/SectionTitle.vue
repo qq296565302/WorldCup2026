@@ -35,5 +35,6 @@ defineProps({
   width: 100%;
   height: 3px;
   border-radius: 2px;
+  box-shadow: 0 0 8px currentColor;
 }
 </style>

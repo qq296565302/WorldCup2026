@@ -28,7 +28,7 @@ const emit = defineEmits(['update:active'])
 
 <style scoped>
 .tab-bar {
-  background: var(--wc-surface);
+  background: var(--wc-bg-elevated);
   border-bottom: 1px solid var(--wc-border);
   padding: var(--wc-space-sm) 0;
 }
@@ -51,7 +51,7 @@ const emit = defineEmits(['update:active'])
   padding: var(--wc-space-sm) var(--wc-space-lg);
   border-radius: var(--wc-radius-2xl);
   border: 1px solid var(--wc-border);
-  background: var(--wc-surface);
+  background: rgba(255, 255, 255, 0.05);
   color: var(--wc-text-secondary);
   font-size: var(--wc-font-size-md);
   cursor: pointer;
@@ -63,6 +63,8 @@ const emit = defineEmits(['update:active'])
 .tab-btn.active {
   color: white;
   border-color: transparent;
+  box-shadow: 0 2px 12px rgba(255, 71, 87, 0.3);
+  transform: scale(1.02);
 }
 
 .size-sm .tab-btn {

@@ -28,7 +28,7 @@ onMounted(async () => {
 const getAbilityColor = (val) => {
   if (val >= 85) return '#ef4444'
   if (val >= 70) return '#f97316'
-  if (val >= 55) return '#eab308'
+  if (val >= 55) return 'var(--wc-warning)'
   return '#3b82f6'
 }
 
@@ -484,7 +484,7 @@ const goBack = () => {
 /* 头部 */
 .player-header {
   position: relative;
-  background: linear-gradient(135deg, var(--wc-dark), var(--wc-darker));
+  background: linear-gradient(135deg, var(--wc-bg), var(--wc-bg-elevated));
   color: white;
   padding: var(--wc-space-xl) var(--wc-space-lg) var(--wc-space-2xl);
   overflow: hidden;
@@ -621,7 +621,7 @@ const goBack = () => {
 .value-num {
   font-size: var(--wc-font-size-base);
   font-weight: var(--wc-font-weight-bold);
-  color: #22c55e;
+  color: var(--wc-accent);
 }
 
 /* 通用 section */
@@ -631,7 +631,7 @@ const goBack = () => {
 
 /* 雷达图 */
 .radar-wrap {
-  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  background: var(--wc-surface);
   border-radius: var(--wc-radius-lg);
   padding: var(--wc-space-lg);
   display: flex;
@@ -672,7 +672,7 @@ const goBack = () => {
 
 .radar-val.elite { color: #ef4444; }
 .radar-val.good { color: #f97316; }
-.radar-val.average { color: #eab308; }
+.radar-val.average { color: var(--wc-warning); }
 .radar-val.low { color: #3b82f6; }
 
 /* 详细属性 */
@@ -725,7 +725,7 @@ const goBack = () => {
 .attr-bar-wrap {
   flex: 1;
   height: 4px;
-  background: var(--wc-gray-200);
+  background: rgba(255,255,255,0.08);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -745,7 +745,7 @@ const goBack = () => {
 
 .attr-val.elite { color: #ef4444; }
 .attr-val.good { color: #f97316; }
-.attr-val.average { color: #eab308; }
+.attr-val.average { color: var(--wc-warning); }
 .attr-val.low { color: #3b82f6; }
 
 /* 位置能力 - 球场 */
@@ -791,11 +791,12 @@ const goBack = () => {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--wc-gray-200);
+  background: rgba(255,255,255,0.12);
 }
 
 .dot.filled {
-  background: #eab308;
+  background: var(--wc-warning);
+  box-shadow: 0 0 6px rgba(252,196,25,0.4);
 }
 
 .ability-footer {
@@ -827,7 +828,7 @@ const goBack = () => {
   font-weight: var(--wc-font-weight-semibold);
   color: var(--wc-text-secondary);
   text-align: center;
-  background: var(--wc-gray-50);
+  background: var(--wc-surface-active);
   border-bottom: 2px solid var(--wc-border);
   white-space: nowrap;
 }
@@ -835,7 +836,7 @@ const goBack = () => {
 .stats-table td {
   padding: var(--wc-space-sm) var(--wc-space-xs);
   text-align: center;
-  border-bottom: 1px solid var(--wc-border-light);
+  border-bottom: 1px solid var(--wc-border);
   color: var(--wc-text-primary);
 }
 
@@ -891,7 +892,7 @@ const goBack = () => {
 .honor-times {
   font-size: var(--wc-font-size-sm);
   font-weight: var(--wc-font-weight-bold);
-  color: #eab308;
+  color: var(--wc-warning);
 }
 
 /* 近期比赛 */
@@ -942,8 +943,8 @@ const goBack = () => {
   text-align: center;
 }
 
-.match-result.w { color: #22c55e; }
-.match-result.d { color: #eab308; }
+.match-result.w { color: var(--wc-accent); }
+.match-result.d { color: var(--wc-warning); }
 .match-result.l { color: #ef4444; }
 
 /* 转会记录 */
@@ -1014,7 +1015,7 @@ const goBack = () => {
 .transfer-fee {
   text-align: center;
   font-size: var(--wc-font-size-xs);
-  color: #22c55e;
+  color: var(--wc-accent);
   font-weight: var(--wc-font-weight-bold);
   margin-top: 4px;
 }

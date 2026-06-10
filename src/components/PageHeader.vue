@@ -44,19 +44,19 @@ const emit = defineEmits(['back'])
 }
 
 .gradient-primary {
-  background: linear-gradient(135deg, #e53e3e 0%, #c53030 50%, #9b2c2c 100%);
+  background: linear-gradient(135deg, #1a0f12 0%, #2a1015 50%, #1a0f12 100%);
 }
 
 .gradient-secondary {
-  background: linear-gradient(135deg, #3182ce 0%, #2b6cb0 50%, #1a4e8a 100%);
+  background: linear-gradient(135deg, #0f1a28 0%, #132744 50%, #0f1a28 100%);
 }
 
 .gradient-accent {
-  background: linear-gradient(135deg, #38a169 0%, #2f855a 50%, #276749 100%);
+  background: linear-gradient(135deg, #0f1a12 0%, #132a1a 50%, #0f1a12 100%);
 }
 
 .gradient-dark {
-  background: linear-gradient(135deg, #2d3748 0%, #1e3a5f 50%, #0f2744 100%);
+  background: var(--wc-bg);
 }
 
 .header-back {
@@ -100,7 +100,7 @@ const emit = defineEmits(['back'])
 .deco-circle {
   position: absolute;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
+  background: radial-gradient(circle, rgba(77, 171, 247, 0.1), transparent);
 }
 
 .c1 {
@@ -115,7 +115,7 @@ const emit = defineEmits(['back'])
   height: 80px;
   bottom: -20px;
   left: 20%;
-  background: rgba(255, 255, 255, 0.05);
+  background: radial-gradient(circle, rgba(255, 71, 87, 0.08), transparent);
 }
 
 .c3 {
@@ -123,6 +123,6 @@ const emit = defineEmits(['back'])
   height: 60px;
   top: 50%;
   right: 30%;
-  background: rgba(255, 255, 255, 0.06);
+  background: radial-gradient(circle, rgba(81, 207, 102, 0.08), transparent);
 }
 </style>

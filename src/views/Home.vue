@@ -69,7 +69,6 @@ onMounted(async () => {
   loading.value = true
   try {
     matches.value = await getSchedule()
-    // 提醒当天收藏的未开始比赛
     if (shouldAlertToday()) {
       const today = new Date().toISOString().slice(0, 10)
       const todayFav = matches.value.filter(m => isFav(m.num) && m.date === today && m.status === 'scheduled')
@@ -89,34 +88,36 @@ onMounted(async () => {
 
 <template>
   <div class="page-container">
-    <section class="schedule-banner">
-      <div class="banner-bg"></div>
-      <div class="banner-content">
-        <img :src="wcLogo" alt="2026 FIFA World Cup" loading="lazy" class="banner-logo" />
-        <div class="banner-text">
-          <h1 class="banner-title">赛程总览</h1>
-          <p class="banner-sub">104 场比赛 · 美国·加拿大·墨西哥</p>
+    <!-- Hero Banner -->
+    <section class="hero-banner">
+      <div class="hero-bg"></div>
+      <div class="hero-content">
+        <div class="hero-top">
+          <img :src="wcLogo" alt="2026 FIFA World Cup" loading="lazy" class="hero-logo" />
+          <div class="hero-text">
+            <h1 class="hero-title">赛程总览</h1>
+            <p class="hero-subtitle">2026 FIFA World Cup</p>
+          </div>
         </div>
-      </div>
-      <div class="banner-stats">
-        <div class="stat-item">
-          <span class="stat-num">{{ totalMatches }}</span>
-          <span class="stat-label">场比赛</span>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <span class="stat-num">48</span>
-          <span class="stat-label">支队伍</span>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <span class="stat-num">16</span>
-          <span class="stat-label">个场馆</span>
+        <div class="hero-stats">
+          <div class="stat-pill">
+            <span class="stat-value">{{ totalMatches }}</span>
+            <span class="stat-unit">场比赛</span>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-value">48</span>
+            <span class="stat-unit">支队伍</span>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-value">16</span>
+            <span class="stat-unit">个场馆</span>
+          </div>
         </div>
       </div>
     </section>
 
-    <div class="filter-section">
+    <!-- 筛选栏 -->
+    <div class="filter-bar">
       <TabBar :tabs="stages" v-model:active="activeStage" />
     </div>
 
@@ -124,22 +125,23 @@ onMounted(async () => {
 
     <div v-else-if="Object.keys(matchesByDate).length > 0" class="match-list">
       <div v-for="(dayMatches, date) in matchesByDate" :key="date" class="date-group">
+        <!-- 日期头部 -->
         <div class="date-header">
-          <div class="date-card">
-            <div class="date-card-main">
-              <span class="date-card-day">{{ dateParts(date).day }}</span>
-              <div class="date-card-meta">
-                <span class="date-card-month">{{ dateParts(date).month }}月</span>
-                <span class="date-card-weekday">{{ dateParts(date).weekday }}</span>
-              </div>
+          <div class="date-badge" :class="{ 'is-today': dateLabel(date) === '今日' }">
+            <span class="date-day">{{ dateParts(date).day }}</span>
+            <div class="date-meta">
+              <span class="date-month">{{ dateParts(date).month }}月</span>
+              <span class="date-weekday">{{ dateParts(date).weekday }}</span>
             </div>
-            <span v-if="dateLabel(date)" class="date-card-badge">{{ dateLabel(date) }}</span>
           </div>
-          <div class="date-divider">
-            <span class="date-match-count">{{ dayMatches.length }} 场比赛</span>
+          <div class="date-info">
+            <span v-if="dateLabel(date)" class="date-tag">{{ dateLabel(date) }}</span>
+            <span class="date-count">{{ dayMatches.length }} 场</span>
           </div>
         </div>
-        <div class="date-matches">
+
+        <!-- 比赛列表 -->
+        <div class="match-cards">
           <MatchCard
             v-for="match in dayMatches"
             :key="match.id"
@@ -155,187 +157,183 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-/* Banner */
-.schedule-banner {
+/* Hero Banner */
+.hero-banner {
   position: relative;
-  background: linear-gradient(135deg, #1a0a0a 0%, #3d1515 40%, #5c1a1a 100%);
-  color: white;
-  padding: var(--wc-space-2xl) var(--wc-space-lg) var(--wc-space-lg);
+  padding: var(--wc-space-3xl) var(--wc-space-lg) var(--wc-space-2xl);
   overflow: hidden;
 }
 
-.banner-bg {
+.hero-bg {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse at 80% 20%, rgba(229,62,62,0.25), transparent 50%),
-    radial-gradient(ellipse at 20% 80%, rgba(251,191,36,0.12), transparent 50%);
+    linear-gradient(180deg, rgba(15, 25, 35, 0) 0%, var(--wc-bg) 100%),
+    radial-gradient(ellipse at 60% 30%, rgba(255, 71, 87, 0.12), transparent 60%),
+    radial-gradient(ellipse at 30% 70%, rgba(77, 171, 247, 0.08), transparent 60%);
 }
 
-.banner-content {
+.hero-content {
   position: relative;
   z-index: 1;
+}
+
+.hero-top {
   display: flex;
   align-items: center;
-  gap: var(--wc-space-lg);
+  gap: var(--wc-space-xl);
+  margin-bottom: var(--wc-space-2xl);
 }
 
-.banner-logo {
-  width: 72px;
+.hero-logo {
+  width: 80px;
   height: auto;
   flex-shrink: 0;
-  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
 }
 
-.banner-text {
+.hero-text {
   flex: 1;
 }
 
-.banner-title {
-  font-size: var(--wc-font-size-3xl);
+.hero-title {
+  font-size: var(--wc-font-size-4xl);
   font-weight: var(--wc-font-weight-black);
+  color: var(--wc-text-primary);
   margin: 0;
   letter-spacing: -0.5px;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  line-height: 1.1;
 }
 
-.banner-sub {
+.hero-subtitle {
   font-size: var(--wc-font-size-sm);
-  opacity: 0.7;
+  color: var(--wc-text-muted);
   margin-top: 4px;
+  font-weight: var(--wc-font-weight-medium);
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
-.banner-stats {
-  position: relative;
-  z-index: 1;
+/* 统计胶囊 */
+.hero-stats {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--wc-space-lg);
-  margin-top: var(--wc-space-lg);
-  padding-top: var(--wc-space-md);
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.stat-num {
-  font-size: var(--wc-font-size-2xl);
-  font-weight: var(--wc-font-weight-black);
-  line-height: 1;
-}
-
-.stat-label {
-  font-size: var(--wc-font-size-xs);
-  opacity: 0.7;
-  margin-top: 2px;
-}
-
-.stat-divider {
-  width: 1px;
-  height: 24px;
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.filter-section {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: var(--wc-surface);
-}
-
-.group-filter {
-  border-top: 1px solid var(--wc-border-light);
-}
-
-.match-list {
-  padding: var(--wc-space-md);
-}
-
-.date-group {
-  margin-bottom: var(--wc-space-xl);
-}
-
-.date-header {
-  margin-bottom: var(--wc-space-md);
-}
-
-.date-card {
-  display: flex;
-  align-items: center;
-  gap: var(--wc-space-md);
-  background: linear-gradient(135deg, var(--wc-primary) 0%, #c53030 100%);
-  color: white;
-  padding: var(--wc-space-md) var(--wc-space-lg);
-  border-radius: var(--wc-radius-lg);
-  box-shadow: 0 2px 8px rgba(229, 62, 62, 0.2);
-}
-
-.date-card-main {
-  display: flex;
-  align-items: center;
   gap: var(--wc-space-sm);
 }
 
-.date-card-day {
-  font-size: 36px;
-  font-weight: 900;
-  line-height: 1;
-  letter-spacing: -1px;
+.stat-pill {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--wc-space-md) var(--wc-space-sm);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--wc-border);
+  border-radius: var(--wc-radius-xl);
 }
 
-.date-card-meta {
+.stat-value {
+  font-size: var(--wc-font-size-2xl);
+  font-weight: var(--wc-font-weight-black);
+  color: var(--wc-text-primary);
+  line-height: 1;
+}
+
+.stat-unit {
+  font-size: 10px;
+  color: var(--wc-text-muted);
+  font-weight: var(--wc-font-weight-medium);
+}
+
+/* 筛选栏 */
+.filter-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--wc-bg);
+  border-bottom: 1px solid var(--wc-border-light);
+}
+
+/* 比赛列表 */
+.match-list {
+  padding: var(--wc-space-lg) var(--wc-space-md);
+}
+
+.date-group {
+  margin-bottom: var(--wc-space-3xl);
+}
+
+.date-group:last-child {
+  margin-bottom: 0;
+}
+
+/* 日期头部 */
+.date-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--wc-space-lg);
+  padding: 0 var(--wc-space-xs);
+}
+
+.date-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--wc-space-md);
+}
+
+.date-badge.is-today .date-day {
+  color: var(--wc-primary);
+}
+
+.date-day {
+  font-size: 32px;
+  font-weight: var(--wc-font-weight-black);
+  color: var(--wc-text-primary);
+  line-height: 1;
+  letter-spacing: -1px;
+  min-width: 36px;
+}
+
+.date-meta {
   display: flex;
   flex-direction: column;
   gap: 1px;
 }
 
-.date-card-month {
+.date-month {
   font-size: var(--wc-font-size-base);
-  font-weight: 600;
-  opacity: 0.9;
+  font-weight: var(--wc-font-weight-semibold);
+  color: var(--wc-text-primary);
 }
 
-.date-card-weekday {
-  font-size: var(--wc-font-size-sm);
-  opacity: 0.7;
-}
-
-.date-card-badge {
+.date-weekday {
   font-size: var(--wc-font-size-xs);
-  font-weight: 700;
-  background: rgba(255, 255, 255, 0.25);
-  padding: 2px 10px;
-  border-radius: var(--wc-radius-full);
-  margin-left: auto;
-  backdrop-filter: blur(4px);
+  color: var(--wc-text-muted);
 }
 
-.date-divider {
+.date-info {
   display: flex;
   align-items: center;
   gap: var(--wc-space-sm);
-  padding: var(--wc-space-xs) 0 0;
 }
 
-.date-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--wc-border-light);
+.date-tag {
+  font-size: var(--wc-font-size-xs);
+  font-weight: var(--wc-font-weight-bold);
+  color: var(--wc-primary);
+  background: var(--wc-primary-subtle);
+  padding: 2px 8px;
+  border-radius: var(--wc-radius-full);
 }
 
-.date-match-count {
+.date-count {
   font-size: var(--wc-font-size-xs);
   color: var(--wc-text-muted);
-  white-space: nowrap;
 }
 
-.date-matches {
+/* 比赛卡片列表 */
+.match-cards {
   display: flex;
   flex-direction: column;
   gap: var(--wc-space-md);
