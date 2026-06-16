@@ -1,6 +1,7 @@
 import { API_CONFIG } from './config'
 import { juheClient, wheniskickoffClient, theSportsDbClient, dongqiudiClient, miguClient } from './http'
 import { dqMatchIdMap } from './dqMatchIds'
+import { getDqTeamId } from './dqTeamIds'
 import { getTeamById } from '../data/teams'
 import { getVenueByNum } from '../data/matchVenues'
 import { getCachedVenue, cacheVenue, cacheMatchStatuses, getCachedMatchStatus } from '../composables/useVenueCache'
@@ -649,6 +650,146 @@ export const getDqMatchLineup = async (dqMatchId) => {
     }
   } catch (error) {
     console.error('懂球帝阵容获取失败:', error.message)
+    return null
+  }
+}
+
+/**
+ * 获取懂球帝球队资讯
+ * 通过 Nginx 代理获取球队页面 HTML，从 __NUXT__ 数据中提取资讯列表
+ * @param {string} teamId - 项目内部球队 ID（如 'JPN'）
+ * @returns {Array} 资讯列表 [{ id, title, url, category, date, comments, thumb }]
+ */
+export const getTeamNews = async (teamId) => {
+  const dqTeamId = getDqTeamId(teamId)
+  if (!dqTeamId) return []
+
+  const cacheKey = `teamNews:${teamId}`
+  const cached = getCached(cacheKey)
+  if (cached) return cached
+
+  try {
+    // 通过 Nginx 代理获取懂球帝球队页面 HTML
+    const html = await dongqiudiClient.get(`${API_CONFIG.dongqiudi.endpoints.teamNews}${dqTeamId}`, {
+      responseType: 'text',
+      headers: { Accept: 'text/html' }
+    })
+
+    if (typeof html !== 'string') return []
+
+    // 从 __NUXT__ 数据中提取资讯列表
+    // 格式：__NUXT__=(function(a,b,...){return {...}})()
+    const nuxtMatch = html.match(/__NUXT__\s*=\s*([\s\S]*?)<\/script>/)
+    if (nuxtMatch) {
+      try {
+        // 去掉末尾可能的分号
+        let nuxtExpr = nuxtMatch[1].trim().replace(/;$/, '')
+        const nuxtData = new Function('return ' + nuxtExpr)()
+        const newsList = nuxtData?.data?.[0]?.newsList || []
+        if (newsList.length > 0) {
+          const articles = newsList.map(n => ({
+            id: n.id,
+            title: n.title || '',
+            url: `/news/${n.id}`,
+            category: n.category || '',
+            date: n.time || '',
+            comments: n.commentsTotal != null ? String(n.commentsTotal) : (n.comments != null ? String(n.comments) : ''),
+            thumb: (n.image || '').replace(/\\u002F/g, '/')
+          }))
+          setCache(cacheKey, articles)
+          return articles
+        }
+      } catch (e) {
+        console.warn('__NUXT__ 数据解析失败:', e.message)
+      }
+    }
+
+    // 备用方案：DOM 解析
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(html, 'text/html')
+    const articles = []
+
+    doc.querySelectorAll('.tp-news-item').forEach(item => {
+      const title = item.querySelector('.tp-news-item__title')
+      const tag = item.querySelector('.tp-news-item__tag')
+      const time = item.querySelector('.tp-news-item__time')
+      const comments = item.querySelector('.tp-news-item__comments')
+      const img = item.querySelector('.tp-news-item__img')
+
+      if (title) {
+        articles.push({
+          id: '',
+          title: title.textContent?.trim() || '',
+          url: '',
+          category: tag?.textContent?.trim() || '',
+          date: time?.textContent?.trim() || '',
+          comments: comments?.textContent?.trim() || '',
+          thumb: img?.src || ''
+        })
+      }
+    })
+
+    setCache(cacheKey, articles)
+    return articles
+  } catch (error) {
+    console.error('懂球帝球队资讯获取失败:', error.message)
+    return []
+  }
+}
+
+/**
+ * 获取懂球帝文章详情
+ * 通过 Nginx 代理获取文章页面 HTML，从 __NUXT__ 数据中提取正文
+ * @param {number|string} articleId - 文章 ID
+ * @returns {object|null} { id, title, body, publishedAt, source, category, channels }
+ */
+export const getArticleDetail = async (articleId) => {
+  if (!articleId) return null
+
+  const cacheKey = `article:${articleId}`
+  const cached = getCached(cacheKey)
+  if (cached) return cached
+
+  try {
+    const html = await dongqiudiClient.get(`/articles/${articleId}`, {
+      responseType: 'text',
+      headers: { Accept: 'text/html' }
+    })
+
+    if (typeof html !== 'string') return null
+
+    const nuxtMatch = html.match(/__NUXT__\s*=\s*([\s\S]*?)<\/script>/)
+    if (nuxtMatch) {
+      try {
+        let nuxtExpr = nuxtMatch[1].trim().replace(/;$/, '')
+        const nuxtData = new Function('return ' + nuxtExpr)()
+        const article = nuxtData?.data?.[0]?.article
+        if (article) {
+          const result = {
+            id: article.id,
+            title: article.title || '',
+            body: (article.rawBody || '')
+              .replace(/\\u002F/g, '/').replace(/\\u003C/g, '<').replace(/\\u003E/g, '>')
+              .replace(/data-src=/g, 'src='),
+            publishedAt: article.publishedAt || '',
+            source: article.source || '',
+            category: article.category || '',
+            channels: (article.channels || []).map(ch => ({
+              tag: ch.tag || '',
+              entityId: ch.entityId || ''
+            }))
+          }
+          setCache(cacheKey, result)
+          return result
+        }
+      } catch (e) {
+        console.warn('文章 __NUXT__ 解析失败:', e.message)
+      }
+    }
+
+    return null
+  } catch (error) {
+    console.error('懂球帝文章详情获取失败:', error.message)
     return null
   }
 }

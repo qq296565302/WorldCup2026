@@ -42,6 +42,12 @@ const routes = [
     name: 'MyMatches',
     component: () => import('../views/MyMatches.vue'),
     meta: { title: '我的比赛' }
+  },
+  {
+    path: '/news/:id',
+    name: 'NewsDetail',
+    component: () => import('../views/NewsDetail.vue'),
+    meta: { title: '资讯详情' }
   }
 ]
 

@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getTeamById } from '../data/teams'
 import { getSquadByTeamId } from '../data/squads'
-import { getScheduleFallback } from '../services'
+import { getScheduleFallback, getTeamNews } from '../services'
 import LoadingState from '../components/LoadingState.vue'
 import EmptyState from '../components/EmptyState.vue'
 import SectionTitle from '../components/SectionTitle.vue'
@@ -14,7 +14,9 @@ const router = useRouter()
 const team = ref(null)
 const squad = ref(null)
 const teamMatches = ref([])
+const teamNews = ref([])
 const loading = ref(true)
+const activeTab = ref('squad')
 const teamId = route.params.id
 
 const positionGroups = [
@@ -40,11 +42,18 @@ onMounted(async () => {
   squad.value = getSquadByTeamId(teamId)
 
   try {
-    const matches = await getScheduleFallback()
+    const [matches, news] = await Promise.all([
+      getScheduleFallback(),
+      getTeamNews(teamId)
+    ])
     teamMatches.value = matches.filter(m => {
       const home = getTeamById(m.home_team)
       const away = getTeamById(m.away_team)
       return (home && home.id === team.value.id) || (away && away.id === team.value.id)
+    })
+    teamNews.value = (news || []).filter(n => {
+      if (!n.date) return false
+      return new Date(n.date) >= new Date('2026-06-12T00:00:00')
     })
   } catch (error) {
     console.error('队伍详情加载失败:', error)
@@ -113,9 +122,22 @@ onMounted(async () => {
         </div>
       </section>
 
+      <!-- Tab 标签栏 -->
+      <div class="tab-bar">
+        <button
+          class="tab-item"
+          :class="{ active: activeTab === 'squad' }"
+          @click="activeTab = 'squad'"
+        >球队阵容</button>
+        <button
+          class="tab-item"
+          :class="{ active: activeTab === 'news' }"
+          @click="activeTab = 'news'"
+        >球队资讯</button>
+      </div>
+
       <!-- 球员名单 -->
-      <section v-if="squad?.players?.length" class="section">
-        <SectionTitle title="球员名单" accent />
+      <section v-if="activeTab === 'squad' && squad?.players?.length" class="section">
         <div v-for="group in groupedPlayers" :key="group.key" class="position-group">
           <div class="position-header">
             <span class="position-icon">{{ group.icon }}</span>
@@ -162,6 +184,31 @@ onMounted(async () => {
             </div>
           </div>
         </div>
+      </section>
+
+      <!-- 球队资讯 -->
+      <section v-if="activeTab === 'news'" class="section">
+        <div v-if="teamNews.length > 0" class="news-list">
+          <div
+            v-for="article in teamNews"
+            :key="article.id || article.url"
+            class="news-card"
+            @click="article.id ? router.push(`/news/${article.id}`) : null"
+          >
+            <div class="news-thumb" v-if="article.thumb">
+              <img :src="article.thumb" :alt="article.title" loading="lazy" class="news-thumb-img" />
+            </div>
+            <div class="news-content">
+              <div class="news-title">{{ article.title }}</div>
+              <div class="news-meta">
+                <span class="news-category" v-if="article.category">{{ article.category }}</span>
+                <span class="news-date">{{ article.date }}</span>
+                <span class="news-comments" v-if="article.comments">💬 {{ article.comments }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-else class="empty-text">暂无资讯</div>
       </section>
 
       <!-- 赛程 -->
@@ -689,5 +736,109 @@ onMounted(async () => {
   text-align: center;
   color: var(--wc-text-muted);
   padding: var(--wc-space-2xl);
+}
+
+/* 球队资讯 */
+.news-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wc-space-sm);
+}
+
+.news-card {
+  display: flex;
+  align-items: center;
+  background: var(--wc-surface);
+  border: 1px solid var(--wc-border);
+  border-radius: var(--wc-radius-lg);
+  padding: var(--wc-space-md);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  gap: var(--wc-space-md);
+}
+
+.news-card:active {
+  transform: scale(0.98);
+}
+
+.news-thumb {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--wc-radius-md);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.news-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.news-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.news-title {
+  font-size: var(--wc-font-size-base);
+  font-weight: var(--wc-font-weight-semibold);
+  color: var(--wc-text-primary);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.news-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--wc-space-sm);
+  margin-top: var(--wc-space-xs);
+  font-size: var(--wc-font-size-xs);
+  color: var(--wc-text-muted);
+}
+
+.news-category {
+  color: var(--wc-primary);
+  font-weight: var(--wc-font-weight-semibold);
+}
+
+/* Tab 标签栏 */
+.tab-bar {
+  display: flex;
+  margin: 0 var(--wc-space-lg);
+  background: var(--wc-surface);
+  border: 1px solid var(--wc-border);
+  border-radius: var(--wc-radius-lg);
+  padding: 4px;
+  gap: 4px;
+}
+
+.tab-item {
+  flex: 1;
+  padding: var(--wc-space-sm) var(--wc-space-md);
+  border: none;
+  border-radius: var(--wc-radius-md);
+  background: transparent;
+  color: var(--wc-text-secondary);
+  font-size: var(--wc-font-size-base);
+  font-weight: var(--wc-font-weight-semibold);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.tab-item.active {
+  background: var(--wc-primary);
+  color: white;
+  box-shadow: 0 2px 8px rgba(77, 171, 247, 0.3);
+}
+
+.tab-item:not(.active):active {
+  background: rgba(255, 255, 255, 0.06);
 }
 </style>

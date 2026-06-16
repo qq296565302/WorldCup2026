@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElNotification } from 'element-plus'
 import { getSchedule, fetchMiguCommentators } from '../services'
@@ -16,6 +16,7 @@ const { isFav, shouldAlertToday, markAlerted } = useFavorites()
 const matches = ref([])
 const loading = ref(true)
 const activeFilter = ref('all')
+let refreshTimer = null
 
 const filters = [
   { key: 'all', label: '全部' },
@@ -95,6 +96,43 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+})
+
+// 进行中的比赛自动刷新比分
+
+function startLiveRefresh() {
+  stopLiveRefresh()
+  refreshTimer = setInterval(async () => {
+    const hasLive = matches.value.some(m => liveStatuses.includes(m.status))
+    if (!hasLive) {
+      stopLiveRefresh()
+      return
+    }
+    try {
+      matches.value = await getSchedule()
+    } catch (e) {
+      // 静默失败
+    }
+  }, 30000) // 30秒刷新一次
+}
+
+function stopLiveRefresh() {
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+    refreshTimer = null
+  }
+}
+
+// 监听比赛数据变化，有进行中的比赛时启动轮询
+watch(() => matches.value, () => {
+  const hasLive = matches.value.some(m => liveStatuses.includes(m.status))
+  if (hasLive && !refreshTimer) {
+    startLiveRefresh()
+  }
+}, { deep: true })
+
+onUnmounted(() => {
+  stopLiveRefresh()
 })
 </script>
 

@@ -31,7 +31,9 @@ export const API_CONFIG = {
       matchOverview: '/api/data/overview/match',
       matchLineup: '/sport-data/soccer/biz/dqd/v1/match/lineup',
       matchAnalysis: '/api/data/match/pre_analysis_v1',
-      matchOdds: '/sport-data/soccer/biz/dqd/v1/match/odds/index'
+      matchOdds: '/sport-data/soccer/biz/dqd/v1/match/odds/index',
+      // 球队资讯：通过代理获取 HTML 页面并解析
+      teamNews: '/team/'
     }
   },
 

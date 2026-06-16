@@ -34,7 +34,10 @@ export default defineConfig({
             proxyReq.setHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36')
             proxyReq.setHeader('Referer', 'https://www.dongqiudi.com/')
             proxyReq.setHeader('Origin', 'https://www.dongqiudi.com')
-            proxyReq.setHeader('Accept', 'application/json')
+            // 不固定 Accept，让前端请求决定
+            if (!proxyReq.getHeader('Accept')) {
+              proxyReq.setHeader('Accept', 'application/json')
+            }
           })
         }
       },
