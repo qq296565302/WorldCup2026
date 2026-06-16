@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { getScheduleFallback, getDqMatchDetail, getDqMatchOverview, getDqMatchLineup, getDqMatchOdds, getDqMatchAnalysis } from '../services'
 import { getTeamById } from '../data/teams'
 import { formatDate, getStageName } from '../utils/helpers'
-import { cacheVenue } from '../composables/useVenueCache'
+import { cacheVenue, cacheMatchStatuses } from '../composables/useVenueCache'
 import LoadingState from '../components/LoadingState.vue'
 import EmptyState from '../components/EmptyState.vue'
 
@@ -86,6 +86,21 @@ const awayRank = computed(() => {
 // 比赛事件
 const matchEvents = computed(() => dqOverview.value?.events || [])
 
+// 扁平化事件列表（将 home/away 事件合并为按时间排序的单一列表）
+const flatEvents = computed(() => {
+  const events = matchEvents.value
+  if (!Array.isArray(events)) return []
+  const list = []
+  events.forEach(e => {
+    const minute = e.minute || ''
+    const extra = e.minuteExtra ? `+${e.minuteExtra}` : ''
+    const displayMinute = `${minute}${extra}`
+    ;(e.home || []).forEach(h => list.push({ ...h, side: 'home', displayMinute }))
+    ;(e.away || []).forEach(a => list.push({ ...a, side: 'away', displayMinute }))
+  })
+  return list
+})
+
 // 比赛统计
 const matchStats = computed(() => dqOverview.value?.statistics || [])
 
@@ -94,8 +109,9 @@ const lineupInfo = computed(() => dqLineup.value || null)
 
 // 半场比分
 const halfScore = computed(() => {
-  if (dqDetail.value?.homeHalfScore !== null && dqDetail.value?.awayHalfScore !== null) {
-    return `${dqDetail.value.homeHalfScore} - ${dqDetail.value.awayHalfScore}`
+  const d = dqDetail.value
+  if (d && d.homeHalfScore != null && d.awayHalfScore != null) {
+    return `${d.homeHalfScore} - ${d.awayHalfScore}`
   }
   return ''
 })
@@ -136,7 +152,18 @@ const loadDqData = async (dqMatchId) => {
       getDqMatchOdds(dqMatchId),
       getDqMatchAnalysis(dqMatchId)
     ])
-    if (detail.status === 'fulfilled' && detail.value) dqDetail.value = detail.value
+    if (detail.status === 'fulfilled' && detail.value) {
+      dqDetail.value = detail.value
+      // 缓存比赛状态到 localStorage，供赛程页面使用
+      if (match.value?.dq_match_id) {
+        cacheMatchStatuses([{
+          dq_match_id: match.value.dq_match_id,
+          status: detail.value.status,
+          home_score: detail.value.homeScore,
+          away_score: detail.value.awayScore
+        }])
+      }
+    }
     if (overview.status === 'fulfilled' && overview.value) dqOverview.value = overview.value
     if (lineup.status === 'fulfilled' && lineup.value) {
       dqLineup.value = lineup.value
@@ -192,13 +219,17 @@ onUnmounted(() => {
 })
 
 // 事件类型图标
-const eventIcon = (type) => {
+const eventIcon = (code) => {
   const icons = {
-    goal: '⚽', own_goal: '⚽', penalty: '⚽', penalty_miss: '❌',
+    goal: '⚽', G: '⚽', OG: '⚽', PG: '⚽', PG_M: '❌',
+    YC: '🟨', RC: '🟥', YC2: '🟨🟥',
+    SI: '', SO: '', VAR: '📺', A: '', AS: '',
+    // 兼容旧格式
+    own_goal: '⚽', penalty: '⚽', penalty_miss: '❌',
     yellow_card: '🟨', red_card: '🟥', second_yellow_card: '🟨🟥',
-    substitution: '🔄', var: '📺', injury: '🤕'
+    substitution: '', var: '📺', injury: '🤕', assist: ''
   }
-  return icons[type] || '📌'
+  return icons[code] || ''
 }
 
 // 统计数据百分比
@@ -208,6 +239,65 @@ const statPercent = (home, away) => {
   const total = h + a
   if (total === 0) return { home: 50, away: 50 }
   return { home: Math.round(h / total * 100), away: Math.round(a / total * 100) }
+}
+
+// 位置分类：0=门将, 1=后卫, 2=中场, 3=前锋
+const getPositionGroup = (pos) => {
+  if (!pos) return 2
+  const p = String(pos).toUpperCase().trim()
+  // 中文
+  if (p.includes('门将') || p.includes('守门员')) return 0
+  if (p.includes('后卫') || p.includes('中卫') || p.includes('边卫')) return 1
+  if (p.includes('中场') || p.includes('前卫') || p.includes('后腰') || p.includes('前腰')) return 2
+  if (p.includes('前锋') || p.includes('边锋') || p.includes('中锋') || p.includes('影锋')) return 3
+  // 数字
+  if (p === '1') return 0
+  if (p === '2') return 1
+  if (p === '3') return 2
+  if (p === '4') return 3
+  // 英文缩写
+  if (p === 'GK') return 0
+  if (/^(RB|RCB|CB|LCB|LB|RWB|LWB|DF|SW)$/.test(p) || p.includes('BACK') || p.includes('DEF')) return 1
+  if (/^(CDM|RDM|LDM|CM|RCM|LCM|CAM|RAM|LAM|RM|LM|MF|DM|AM)$/.test(p) || p.includes('MID')) return 2
+  if (/^(RW|LW|RF|LF|CF|ST|RS|LS|FW|SS)$/.test(p) || p.includes('FORW') || p.includes('STR')) return 3
+  return 2
+}
+
+// 球员在球场上的位置
+const pitchPosition = (player, side) => {
+  const lineups = side === 'home'
+    ? (lineupInfo.value?.home?.lineups || [])
+    : (lineupInfo.value?.away?.lineups || [])
+
+  if (lineups.length === 0) return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
+
+  // 按 position 分组
+  const groups = [[], [], [], []]
+  lineups.forEach(p => groups[getPositionGroup(p.position)].push(p))
+
+  // 当前球员的分组和组内位置
+  const group = getPositionGroup(player.position)
+  const groupPlayers = groups[group]
+  const posInGroup = groupPlayers.indexOf(player)
+
+  // Y 位置：主队 GK→7%, DF→20%, MF→35%, FW→47% (上半场，靠近中线)
+  // 客队 GK→93%, DF→80%, MF→65%, FW→53% (下半场，靠近中线)
+  const yMapHome = [7, 20, 35, 47]
+  const yMapAway = [93, 80, 65, 53]
+  const yPct = side === 'home' ? yMapHome[group] : yMapAway[group]
+
+  // X 位置：组内均匀分布
+  const groupSize = groupPlayers.length
+  const xStart = 12
+  const xEnd = 88
+  const xRange = xEnd - xStart
+  const xPct = groupSize <= 1 ? 50 : xStart + (posInGroup / (groupSize - 1)) * xRange
+
+  return {
+    top: `${yPct}%`,
+    left: `${xPct}%`,
+    transform: 'translate(-50%, -50%)'
+  }
 }
 
 // 当前赔率数据
@@ -336,18 +426,34 @@ const formatMatchDate = (dateStr) => {
 
       <!-- 赛况/事件 -->
       <section class="tab-content" v-if="activeTab === 'info' && dqDetail">
-        <div class="card" v-if="matchEvents.length > 0">
+        <div class="card" v-if="flatEvents.length > 0">
           <div class="card-title">比赛事件</div>
           <div class="event-list">
             <div
-              v-for="(evt, i) in matchEvents"
+              v-for="(evt, i) in flatEvents"
               :key="i"
               class="event-item"
-              :class="{ 'event-home': evt.position === 'home', 'event-away': evt.position === 'away' }"
+              :class="{ 'event-home': evt.side === 'home', 'event-away': evt.side === 'away' }"
             >
-              <span class="event-minute">{{ evt.time || evt.minute }}'</span>
-              <span class="event-icon">{{ eventIcon(evt.type) }}</span>
-              <span class="event-text">{{ evt.player || evt.content }}</span>
+              <span class="event-minute">{{ evt.displayMinute }}'</span>
+              <span class="event-icon" v-if="eventIcon(evt.code)">{{ eventIcon(evt.code) }}</span>
+              <span class="event-text">
+                {{ evt.person }}
+                <span v-if="evt.code === 'SI'" class="event-tag tag-sub-in" title="换上">
+                  <svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 2l5 6H9v6H7V8H3z" fill="currentColor"/></svg>
+                </span>
+                <span v-else-if="evt.code === 'SO'" class="event-tag tag-sub-out" title="换下">
+                  <svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 14l5-6H9V2H7v6H3z" fill="currentColor"/></svg>
+                </span>
+                <span v-else-if="['G', 'goal'].includes(evt.code)" class="event-tag tag-goal">进球</span>
+                <span v-else-if="evt.code === 'PG'" class="event-tag tag-penalty">点球</span>
+                <span v-else-if="evt.code === 'OG'" class="event-tag tag-own-goal">乌龙</span>
+                <span v-else-if="['A', 'AS', 'assist'].includes(evt.code)" class="event-tag tag-assist">助攻</span>
+                <template v-else-if="evt.reason && evt.code !== 'VAR'">
+                  <span v-if="evt.reason.includes('助攻')" class="event-tag tag-assist">{{ evt.reason }}</span>
+                  <span v-else> ({{ evt.reason }})</span>
+                </template>
+              </span>
             </div>
           </div>
         </div>
@@ -372,7 +478,7 @@ const formatMatchDate = (dateStr) => {
             </div>
           </div>
         </div>
-        <div class="empty-hint" v-if="!matchEvents.length && !lineupInfo">暂无赛况数据</div>
+        <div class="empty-hint" v-if="!flatEvents.length && !lineupInfo">暂无赛况数据</div>
       </section>
 
       <!-- 统计 -->
@@ -380,15 +486,15 @@ const formatMatchDate = (dateStr) => {
         <div class="card" v-if="matchStats.length > 0">
           <div class="stat-list">
             <div v-for="(stat, i) in matchStats" :key="i" class="stat-row">
-              <span class="stat-home">{{ stat.home || stat.team_A || '0' }}</span>
+              <span class="stat-home">{{ stat.home }}</span>
               <div class="stat-bar-wrap">
-                <span class="stat-name">{{ stat.type || stat.name }}</span>
+                <span class="stat-name">{{ stat.name }}</span>
                 <div class="stat-bar">
-                  <div class="stat-bar-fill home" :style="{ width: statPercent(stat.home || stat.team_A, stat.away || stat.team_B).home + '%' }"></div>
-                  <div class="stat-bar-fill away" :style="{ width: statPercent(stat.home || stat.team_A, stat.away || stat.team_B).away + '%' }"></div>
+                  <div class="stat-bar-fill home" :style="{ width: statPercent(stat.home, stat.away).home + '%' }"></div>
+                  <div class="stat-bar-fill away" :style="{ width: statPercent(stat.home, stat.away).away + '%' }"></div>
                 </div>
               </div>
-              <span class="stat-away">{{ stat.away || stat.team_B || '0' }}</span>
+              <span class="stat-away">{{ stat.away }}</span>
             </div>
           </div>
         </div>
@@ -398,37 +504,104 @@ const formatMatchDate = (dateStr) => {
       <!-- 阵容 -->
       <section class="tab-content" v-if="activeTab === 'lineup' && dqDetail">
         <template v-if="lineupInfo">
-          <div class="card" v-if="lineupInfo.home?.lineups || lineupInfo.homeForecast?.lineups">
-            <div class="card-title lineup-title">
-              <img :src="homeLogo" loading="lazy" class="lineup-team-logo" v-if="homeLogo" />
-              {{ getTeamInfo(match.home_team, match.home_name).name }}
-              <span class="formation" v-if="lineupInfo.home?.formation || lineupInfo.homeForecast?.formation">
-                {{ lineupInfo.home?.formation || lineupInfo.homeForecast?.formation }}
-              </span>
-            </div>
-            <div class="lineup-list" v-if="lineupInfo.home?.lineups">
-              <div v-for="p in lineupInfo.home.lineups" :key="p.player_id" class="lineup-player">
-                <span class="player-number">{{ p.shirt_number }}</span>
-                <span class="player-name">{{ p.player_name }}</span>
+          <!-- 足球场阵型图 -->
+          <div class="card" v-if="lineupInfo.home?.lineups?.length || lineupInfo.away?.lineups?.length">
+            <div class="pitch-header">
+              <div class="pitch-team">
+                <img :src="homeLogo" loading="lazy" class="pitch-team-logo" v-if="homeLogo" />
+                <span>{{ getTeamInfo(match.home_team, match.home_name).name }}</span>
+                <span class="formation" v-if="lineupInfo.home?.formation">{{ lineupInfo.home.formation }}</span>
+              </div>
+              <div class="pitch-team">
+                <span class="formation" v-if="lineupInfo.away?.formation">{{ lineupInfo.away.formation }}</span>
+                <span>{{ getTeamInfo(match.away_team, match.away_name).name }}</span>
+                <img :src="awayLogo" loading="lazy" class="pitch-team-logo" v-if="awayLogo" />
               </div>
             </div>
-            <div class="lineup-placeholder" v-else>阵容尚未公布</div>
+            <div class="pitch">
+              <!-- SVG 足球场背景 -->
+              <svg viewBox="0 0 300 440" class="pitch-svg" preserveAspectRatio="xMidYMid meet">
+                <rect x="0" y="0" width="300" height="440" rx="4" fill="#1a6b3c" />
+                <!-- 外框 -->
+                <rect x="8" y="8" width="284" height="424" rx="2" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.2" />
+                <!-- 中线 -->
+                <line x1="8" y1="220" x2="292" y2="220" stroke="rgba(255,255,255,0.35)" stroke-width="1.2" />
+                <!-- 中圈 -->
+                <circle cx="150" cy="220" r="40" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.2" />
+                <circle cx="150" cy="220" r="2" fill="rgba(255,255,255,0.35)" />
+                <!-- 上方禁区 -->
+                <rect x="70" y="8" width="160" height="70" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.2" />
+                <!-- 上方小禁区 -->
+                <rect x="110" y="8" width="80" height="30" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.2" />
+                <!-- 上方罚球点 -->
+                <circle cx="150" cy="58" r="2" fill="rgba(255,255,255,0.35)" />
+                <!-- 上方罚球弧 -->
+                <path d="M 120 78 A 40 40 0 0 0 180 78" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.2" />
+                <!-- 下方禁区 -->
+                <rect x="70" y="362" width="160" height="70" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.2" />
+                <!-- 下方小禁区 -->
+                <rect x="110" y="402" width="80" height="30" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.2" />
+                <!-- 下方罚球点 -->
+                <circle cx="150" cy="382" r="2" fill="rgba(255,255,255,0.35)" />
+                <!-- 下方罚球弧 -->
+                <path d="M 120 362 A 40 40 0 0 1 180 362" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.2" />
+                <!-- 四角弧 -->
+                <path d="M 8 18 A 10 10 0 0 1 18 8" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1" />
+                <path d="M 282 8 A 10 10 0 0 1 292 18" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1" />
+                <path d="M 8 422 A 10 10 0 0 0 18 432" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1" />
+                <path d="M 282 432 A 10 10 0 0 0 292 422" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1" />
+              </svg>
+              <!-- 主队球员（上半场） -->
+              <div
+                v-for="p in lineupInfo.home?.lineups || []"
+                :key="'h' + p.player_id"
+                class="pitch-player pitch-player-home"
+                :style="pitchPosition(p, 'home')"
+              >
+                <img :src="p.logo" loading="lazy" class="pitch-player-avatar" v-if="p.logo" />
+                <span class="pitch-player-name">{{ p.shirt_number }}-{{ p.player_name }}</span>
+              </div>
+              <!-- 客队球员（下半场） -->
+              <div
+                v-for="p in lineupInfo.away?.lineups || []"
+                :key="'a' + p.player_id"
+                class="pitch-player pitch-player-away"
+                :style="pitchPosition(p, 'away')"
+              >
+                <img :src="p.logo" loading="lazy" class="pitch-player-avatar" v-if="p.logo" />
+                <span class="pitch-player-name">{{ p.shirt_number }}-{{ p.player_name }}</span>
+              </div>
+            </div>
           </div>
-          <div class="card" v-if="lineupInfo.away?.lineups || lineupInfo.awayForecast?.lineups">
-            <div class="card-title lineup-title">
-              <img :src="awayLogo" loading="lazy" class="lineup-team-logo" v-if="awayLogo" />
-              {{ getTeamInfo(match.away_team, match.away_name).name }}
-              <span class="formation" v-if="lineupInfo.away?.formation || lineupInfo.awayForecast?.formation">
-                {{ lineupInfo.away?.formation || lineupInfo.awayForecast?.formation }}
-              </span>
-            </div>
-            <div class="lineup-list" v-if="lineupInfo.away?.lineups">
-              <div v-for="p in lineupInfo.away.lineups" :key="p.player_id" class="lineup-player">
-                <span class="player-number">{{ p.shirt_number }}</span>
-                <span class="player-name">{{ p.player_name }}</span>
+
+          <!-- 替补球员 - 左右布局 -->
+          <div class="subs-row" v-if="lineupInfo.home?.subs?.length || lineupInfo.away?.subs?.length">
+            <div class="card subs-card" v-if="lineupInfo.home?.subs?.length">
+              <div class="subs-team-label">
+                <img :src="homeLogo" loading="lazy" class="pitch-team-logo" v-if="homeLogo" />
+                替补
+              </div>
+              <div class="subs-list">
+                <div v-for="p in lineupInfo.home.subs" :key="p.player_id" class="subs-player">
+                  <img :src="p.logo" loading="lazy" class="subs-avatar" v-if="p.logo" />
+                  <span class="subs-number">{{ p.shirt_number }}</span>
+                  <span class="subs-name">{{ p.player_name }}</span>
+                </div>
               </div>
             </div>
-            <div class="lineup-placeholder" v-else>阵容尚未公布</div>
+            <div class="card subs-card" v-if="lineupInfo.away?.subs?.length">
+              <div class="subs-team-label">
+                <img :src="awayLogo" loading="lazy" class="pitch-team-logo" v-if="awayLogo" />
+                替补
+              </div>
+              <div class="subs-list">
+                <div v-for="p in lineupInfo.away.subs" :key="p.player_id" class="subs-player">
+                  <img :src="p.logo" loading="lazy" class="subs-avatar" v-if="p.logo" />
+                  <span class="subs-number">{{ p.shirt_number }}</span>
+                  <span class="subs-name">{{ p.player_name }}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </template>
         <div class="empty-hint" v-else>暂无阵容数据</div>
@@ -960,11 +1133,13 @@ const formatMatchDate = (dateStr) => {
 }
 
 .event-item {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: var(--wc-space-sm);
-  padding: var(--wc-space-xs) 0;
+  padding: var(--wc-space-xs) var(--wc-space-sm);
   font-size: var(--wc-font-size-sm);
+  border-radius: var(--wc-radius-sm);
+  background: var(--wc-bg-card, rgba(255,255,255,0.06));
 }
 
 .event-minute {
@@ -979,15 +1154,61 @@ const formatMatchDate = (dateStr) => {
 
 .event-text {
   flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.event-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 16px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.tag-sub-in {
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.15);
+}
+
+.tag-sub-out {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.tag-goal {
+  color: #fff;
+  background: #f59e0b;
+}
+
+.tag-penalty {
+  color: #fff;
+  background: #8b5cf6;
+}
+
+.tag-own-goal {
+  color: #fff;
+  background: #ef4444;
+}
+
+.tag-assist {
+  color: #fff;
+  background: #3b82f6;
 }
 
 .event-home {
-  flex-direction: row;
+  align-self: flex-start;
 }
 
 .event-away {
   flex-direction: row-reverse;
-  text-align: right;
+  align-self: flex-end;
 }
 
 /* Info Grid */
@@ -1070,14 +1291,25 @@ const formatMatchDate = (dateStr) => {
   margin-left: auto;
 }
 
-/* Lineup */
-.lineup-title {
-  font-size: var(--wc-font-size-base);
+/* Lineup - Pitch */
+.pitch-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--wc-space-sm) var(--wc-space-md);
+  font-size: var(--wc-font-size-sm);
+  font-weight: var(--wc-font-weight-semibold);
 }
 
-.lineup-team-logo {
-  width: 24px;
-  height: 24px;
+.pitch-team {
+  display: flex;
+  align-items: center;
+  gap: var(--wc-space-xs);
+}
+
+.pitch-team-logo {
+  width: 22px;
+  height: 22px;
   object-fit: contain;
 }
 
@@ -1087,45 +1319,121 @@ const formatMatchDate = (dateStr) => {
   background: rgba(255,255,255,0.08);
   padding: 1px 6px;
   border-radius: var(--wc-radius-sm);
-  margin-left: auto;
 }
 
-.lineup-list {
+.pitch {
+  position: relative;
+  width: 100%;
+  border-radius: var(--wc-radius-md);
+  overflow: hidden;
+  margin: 0 auto;
+}
+
+.pitch-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.pitch-player {
+  position: absolute;
   display: flex;
   flex-direction: column;
-  gap: var(--wc-space-xs);
+  align-items: center;
+  z-index: 2;
+  width: 52px;
 }
 
-.lineup-player {
+.pitch-player-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255,255,255,0.6);
+}
+
+.pitch-player-name {
+  font-size: 9px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.7);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 52px;
+  text-align: center;
+  line-height: 1.2;
+  margin-top: 1px;
+}
+
+.pitch-player-home .pitch-player-avatar {
+  border-color: var(--wc-primary, #e63946);
+}
+
+.pitch-player-away .pitch-player-avatar {
+  border-color: var(--wc-accent, #457b9d);
+}
+
+.pitch-player-away .pitch-player-name {
+  text-align: right;
+}
+
+/* Substitutes */
+.subs-row {
   display: flex;
-  align-items: center;
   gap: var(--wc-space-sm);
-  padding: var(--wc-space-xs) 0;
-  font-size: var(--wc-font-size-sm);
+  margin-top: var(--wc-space-sm);
 }
 
-.player-number {
-  min-width: 24px;
-  height: 24px;
+.subs-card {
+  flex: 1;
+  min-width: 0;
+}
+
+.subs-team-label {
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: rgba(255,255,255,0.08);
-  border-radius: var(--wc-radius-sm);
+  gap: var(--wc-space-xs);
   font-size: var(--wc-font-size-xs);
-  font-weight: var(--wc-font-weight-semibold);
   color: var(--wc-text-secondary);
+  padding-bottom: var(--wc-space-xs);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  margin-bottom: var(--wc-space-xs);
 }
 
-.player-name {
-  color: var(--wc-text-primary);
+.subs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.lineup-placeholder {
+.subs-player {
+  display: flex;
+  align-items: center;
+  gap: var(--wc-space-xs);
+  font-size: var(--wc-font-size-xs);
+  padding: 2px 0;
+}
+
+.subs-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.subs-number {
+  min-width: 18px;
   text-align: center;
   color: var(--wc-text-secondary);
-  font-size: var(--wc-font-size-sm);
-  padding: var(--wc-space-lg) 0;
+  font-size: 10px;
+}
+
+.subs-name {
+  color: var(--wc-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Odds */

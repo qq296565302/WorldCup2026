@@ -1,9 +1,10 @@
 import { API_CONFIG } from './config'
-import { juheClient, wheniskickoffClient, theSportsDbClient, dongqiudiClient } from './http'
+import { juheClient, wheniskickoffClient, theSportsDbClient, dongqiudiClient, miguClient } from './http'
 import { dqMatchIdMap } from './dqMatchIds'
 import { getTeamById } from '../data/teams'
 import { getVenueByNum } from '../data/matchVenues'
-import { getCachedVenue } from '../composables/useVenueCache'
+import { getCachedVenue, cacheVenue, cacheMatchStatuses, getCachedMatchStatus } from '../composables/useVenueCache'
+import { getCommentators, updateCommentators, getAllCommentators } from '../data/commentators'
 
 // ============ 缓存 ============
 const cache = new Map()
@@ -20,6 +21,89 @@ function setCache(key, data) {
   cache.set(key, { data, time: Date.now() })
 }
 
+/**
+ * 分批并发执行异步任务
+ * @param {Array} items - 待处理项
+ * @param {Function} fn - 异步处理函数
+ * @param {number} concurrency - 并发数
+ */
+async function batchAllSettled(items, fn, concurrency = 5) {
+  const results = new Array(items.length)
+  let index = 0
+  async function worker() {
+    while (index < items.length) {
+      const i = index++
+      results[i] = await Promise.resolve().then(() => fn(items[i], i)).then(
+        v => ({ status: 'fulfilled', value: v }),
+        e => ({ status: 'rejected', reason: e })
+      )
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, () => worker()))
+  return results
+}
+
+/**
+ * 同步刷新已开赛/已结束比赛的实时状态
+ * 等待结果后再返回，确保数据正确
+ */
+async function refreshMatchStatuses(matches, cacheKey) {
+  const now = new Date()
+  // 需要刷新状态的比赛（已过开赛时间且未结束）
+  const needRefresh = matches.filter(m => {
+    if (!m.dq_match_id) return false
+    const matchTime = new Date(`${m.date}T${m.time}:00+08:00`)
+    return matchTime <= now && m.status !== 'finished'
+  })
+  // 需要预缓存球场的比赛（还没有场馆缓存的）
+  const needVenue = matches.filter(m => {
+    if (!m.dq_match_id) return false
+    return !getCachedVenue(m.dq_match_id)
+  })
+
+  if (needRefresh.length === 0 && needVenue.length === 0) return
+
+  // 分批并发获取，避免同时请求过多导致超时
+  const [statusResults, venueResults] = await Promise.all([
+    needRefresh.length > 0
+      ? batchAllSettled(needRefresh, m => getDqMatchDetail(m.dq_match_id), 5)
+      : Promise.resolve([]),
+    needVenue.length > 0
+      ? batchAllSettled(needVenue, m => getDqMatchLineup(m.dq_match_id), 5)
+      : Promise.resolve([])
+  ])
+
+  let changed = false
+
+  // 更新状态
+  needRefresh.forEach((m, i) => {
+    const r = statusResults[i]
+    if (r?.status === 'fulfilled' && r.value) {
+      m.status = r.value.status || m.status
+      if (r.value.homeScore !== null) m.home_score = r.value.homeScore
+      if (r.value.awayScore !== null) m.away_score = r.value.awayScore
+      changed = true
+    }
+  })
+
+  // 预缓存球场
+  needVenue.forEach((m, i) => {
+    const r = venueResults[i]
+    if (r?.status === 'fulfilled' && r.value?.field) {
+      cacheVenue(m.dq_match_id, r.value.field)
+      const parts = r.value.field.split('·')
+      m.venue_name = parts[0]
+      m.venue_city = parts.length >= 2 ? parts[parts.length - 1] : ''
+      changed = true
+    }
+  })
+
+  if (changed) {
+    setCache(cacheKey, matches)
+    cacheMatchStatuses(matches)
+  }
+}
+
 // ============ 聚合数据 API ============
 
 /**
@@ -31,13 +115,17 @@ export const getSchedule = async (stage = '', group = '') => {
   const cacheKey = `schedule:${stage}:${group}`
   const cached = getCached(cacheKey)
   if (cached) {
-    // 即使命中内存缓存，也要用 localStorage 中的懂球帝场馆缓存更新场馆字段
+    // 同步刷新实时状态
+    await refreshMatchStatuses(cached, cacheKey)
+
     return cached.map(m => {
-      if (m.dq_match_id) {
-        const dqVenue = getCachedVenue(m.dq_match_id)
-        if (dqVenue) {
-          return { ...m, venue_name: dqVenue.name, venue_city: dqVenue.city || '' }
-        }
+      const dqVenue = m.dq_match_id ? getCachedVenue(m.dq_match_id) : null
+      if (dqVenue) {
+        return { ...m, venue_name: dqVenue.name, venue_city: dqVenue.city || '' }
+      }
+      const officialVenue = getVenueByNum(m.num)
+      if (officialVenue) {
+        return { ...m, venue_name: officialVenue.name, venue_city: `${officialVenue.city}·${officialVenue.country}` }
       }
       return m
     })
@@ -65,16 +153,88 @@ export const getSchedule = async (stage = '', group = '') => {
  * @param {string} group - 小组：A~L
  */
 export const getStandings = async (group = '') => {
+  // 从赛程数据中计算积分榜
   try {
-    if (!API_CONFIG.juhe.key) {
-      throw new Error('聚合数据 API Key 未配置')
-    }
-    const params = { key: API_CONFIG.juhe.key }
-    if (group) params.group = group
-    const res = await juheClient.get(API_CONFIG.juhe.endpoints.standing, { params })
-    return res.result || []
+    const allSchedule = await getScheduleFallback()
+    if (!allSchedule || allSchedule.length === 0) return []
+
+    // 按小组过滤比赛
+    const schedule = group
+      ? allSchedule.filter(m => m.group === group)
+      : allSchedule
+
+    // 初始化各队积分数据
+    const table = {}
+    schedule.forEach(m => {
+      if (!table[m.home_team]) {
+        const team = getTeamById(m.home_team)
+        table[m.home_team] = {
+          team_id: m.home_team,
+          team_name: team?.name || m.home_name,
+          played: 0, won: 0, drawn: 0, lost: 0,
+          gf: 0, ga: 0, gd: 0, points: 0
+        }
+      }
+      if (!table[m.away_team]) {
+        const team = getTeamById(m.away_team)
+        table[m.away_team] = {
+          team_id: m.away_team,
+          team_name: team?.name || m.away_name,
+          played: 0, won: 0, drawn: 0, lost: 0,
+          gf: 0, ga: 0, gd: 0, points: 0
+        }
+      }
+    })
+
+    // 从已结束的比赛计算积分
+    schedule.forEach(m => {
+      // 优先从 localStorage 获取最新状态
+      const cachedStatus = m.dq_match_id ? getCachedMatchStatus(m.dq_match_id) : null
+      const status = cachedStatus?.status || m.status
+      const homeScore = cachedStatus?.home_score ?? m.home_score
+      const awayScore = cachedStatus?.away_score ?? m.away_score
+
+      if (status !== 'finished' || homeScore === null || awayScore === null) return
+      const home = table[m.home_team]
+      const away = table[m.away_team]
+      if (!home || !away) return
+
+      home.played++
+      away.played++
+      home.gf += homeScore
+      home.ga += awayScore
+      away.gf += awayScore
+      away.ga += homeScore
+
+      if (homeScore > awayScore) {
+        home.won++
+        home.points += 3
+        away.lost++
+      } else if (homeScore < awayScore) {
+        away.won++
+        away.points += 3
+        home.lost++
+      } else {
+        home.drawn++
+        away.drawn++
+        home.points++
+        away.points++
+      }
+    })
+
+    // 计算净胜球
+    Object.values(table).forEach(t => {
+      t.gd = t.gf - t.ga
+    })
+
+    // 按积分、净胜球、进球数排序
+    return Object.values(table).sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points
+      if (b.gd !== a.gd) return b.gd - a.gd
+      return b.gf - a.gf
+    })
   } catch (error) {
-    console.warn('聚合数据积分榜获取失败:', error.message)
+    console.warn('积分榜计算失败:', error.message)
     return []
   }
 }
@@ -162,13 +322,17 @@ export const getScheduleFallback = async () => {
   const cacheKey = 'schedule:fallback'
   const cached = getCached(cacheKey)
   if (cached) {
-    // 即使命中内存缓存，也要用 localStorage 中的懂球帝场馆缓存更新场馆字段
+    // 同步刷新实时状态
+    await refreshMatchStatuses(cached, cacheKey)
+
     return cached.map(m => {
-      if (m.dq_match_id) {
-        const dqVenue = getCachedVenue(m.dq_match_id)
-        if (dqVenue) {
-          return { ...m, venue_name: dqVenue.name, venue_city: dqVenue.city || '' }
-        }
+      const dqVenue = m.dq_match_id ? getCachedVenue(m.dq_match_id) : null
+      if (dqVenue) {
+        return { ...m, venue_name: dqVenue.name, venue_city: dqVenue.city || '' }
+      }
+      const officialVenue = getVenueByNum(m.num)
+      if (officialVenue) {
+        return { ...m, venue_name: officialVenue.name, venue_city: `${officialVenue.city}·${officialVenue.country}` }
       }
       return m
     })
@@ -183,9 +347,11 @@ export const getScheduleFallback = async () => {
       const homeTeam = getTeamById(m.home)
       const awayTeam = getTeamById(m.away)
       const dqMatchId = dqMatchIdMap[m.num] || null
-      // 场馆优先级：懂球帝缓存 > FIFA官方映射 > wheniskickoff原始数据
+      // 场馆优先级：懂球帝缓存 > FIFA 官方映射 > wheniskickoff 原始数据
       const dqVenue = dqMatchId ? getCachedVenue(dqMatchId) : null
-      const officialVenue = dqVenue ? null : getVenueByNum(m.num)
+      const officialVenue = getVenueByNum(m.num)
+      // 先用 localStorage 恢复状态
+      const cachedStatus = dqMatchId ? getCachedMatchStatus(dqMatchId) : null
       return {
         id: m.slug || m.num,
         num: m.num,
@@ -197,16 +363,20 @@ export const getScheduleFallback = async () => {
         away_team: m.away,
         home_name: homeTeam?.name || m.home_name,
         away_name: awayTeam?.name || m.away_name,
-        home_score: null,
-        away_score: null,
+        home_score: cachedStatus?.home_score ?? null,
+        away_score: cachedStatus?.away_score ?? null,
         group: m.group,
         venue: m.venue,
         venue_name: dqVenue?.name || officialVenue?.name || venueNameMap[m.venue_name] || m.venue_name,
-        venue_city: dqVenue ? (dqVenue.city || '') : (officialVenue ? `${officialVenue.city}·${officialVenue.country}` : (venueCityMap[m.venue_city] || m.venue_city)),
+        venue_city: dqVenue?.city || (officialVenue ? `${officialVenue.city}·${officialVenue.country}` : (venueCityMap[m.venue_city] || m.venue_city)),
         stage: m.phase,
-        status: 'scheduled'
+        status: cachedStatus?.status || 'scheduled'
       }
     })
+
+    // 同步刷新实时状态
+    await refreshMatchStatuses(data, cacheKey)
+
     setCache(cacheKey, data)
     return data
   } catch (error) {
@@ -329,9 +499,9 @@ const dqStatusMap = {
   'Fixture': 'scheduled',
   'Playing': 'live',
   'Played': 'finished',
-  'Half-time': 'halftime',
-  'Extra-time': 'extra_time',
-  'Penalties': 'penalties',
+  'Half-time': 'HT',
+  'Extra-time': 'ET',
+  'Penalties': 'P',
   'Postponed': 'postponed',
   'Cancelled': 'cancelled'
 }
@@ -394,11 +564,41 @@ export const getDqMatchDetail = async (dqMatchId) => {
 export const getDqMatchOverview = async (dqMatchId) => {
   try {
     const res = await dongqiudiClient.get(`${API_CONFIG.dongqiudi.endpoints.matchOverview}/${dqMatchId}`)
-    return {
-      events: res.events || [],
-      statistics: res.statistics || [],
-      matchStatus: res.match_status || ''
+    // 转换统计数据格式：statistics 是 { team_A, team_B, list: [...] }
+    const rawStats = res.statistics?.list || (Array.isArray(res.statistics) ? res.statistics : [])
+    const statistics = rawStats.map(s => ({
+      name: s.type || s.en_type || '',
+      home: typeof s.team_A === 'object' ? s.team_A.value : s.team_A,
+      away: typeof s.team_B === 'object' ? s.team_B.value : s.team_B,
+      homePer: typeof s.team_A === 'object' ? s.team_A.per : null,
+      awayPer: typeof s.team_B === 'object' ? s.team_B.per : null,
+    }))
+    // 转换事件数据格式：按分钟的对象 → 数组
+    let events = res.events || []
+    if (!Array.isArray(events) && typeof events === 'object') {
+      events = Object.entries(events).map(([minute, data]) => ({
+        minute,
+        home: (data.teamAEvents || []).map(e => ({
+          minute: data.minute || minute,
+          minuteExtra: e.minute_extra || 0,
+          person: e.person || '',
+          personId: e.person_id || '',
+          reason: e.reason || '',
+          code: e.code || '',
+          pic: e.event_pic || ''
+        })),
+        away: (data.teamBEvents || []).map(e => ({
+          minute: data.minute || minute,
+          minuteExtra: e.minute_extra || 0,
+          person: e.person || '',
+          personId: e.person_id || '',
+          reason: e.reason || '',
+          code: e.code || '',
+          pic: e.event_pic || ''
+        }))
+      }))
     }
+    return { events, statistics, matchStatus: res.match_status || '' }
   } catch (error) {
     console.error('懂球帝比赛赛况获取失败:', error.message)
     return null
@@ -413,15 +613,39 @@ export const getDqMatchOverview = async (dqMatchId) => {
 export const getDqMatchLineup = async (dqMatchId) => {
   try {
     const res = await dongqiudiClient.get(`${API_CONFIG.dongqiudi.endpoints.matchLineup}/${dqMatchId}`)
+    // 映射球员字段名
+    const mapPlayer = (p) => ({
+      player_id: p.person_id,
+      player_name: p.person,
+      logo: p.logo,
+      shirt_number: p.shirtnumber,
+      position: p.position,
+      captain: p.captain,
+      is_mvp: p.is_mvp,
+      events: p.events || [],
+      nationality_name: p.nationality_name,
+      foot: p.foot,
+      height: p.height,
+      rate: p.rate
+    })
+    const mapTeam = (team) => {
+      if (!team) return null
+      return {
+        formation: team.formation,
+        lineups: (team.lineups || team.start_players || []).map(mapPlayer),
+        subs: (team.sub || team.sub_players || []).map(mapPlayer),
+        coach: team.coach ? { player_name: team.coach.person, logo: team.coach.logo } : (team.team_coach ? { player_name: team.team_coach, logo: team.team_coach_logo } : null)
+      }
+    }
     return {
       weather: res.base?.weather || '',
       temperature: res.base?.temperature || '',
       field: res.base?.field || '',
       referee: res.base?.referee || '',
-      home: res.persons?.team_A || null,
-      away: res.persons?.team_B || null,
-      homeForecast: res.forecasts?.team_A || null,
-      awayForecast: res.forecasts?.team_B || null
+      home: mapTeam(res.persons?.team_A),
+      away: mapTeam(res.persons?.team_B),
+      homeForecast: mapTeam(res.forecasts?.team_A),
+      awayForecast: mapTeam(res.forecasts?.team_B)
     }
   } catch (error) {
     console.error('懂球帝阵容获取失败:', error.message)
@@ -510,4 +734,151 @@ export const getDqMatchOdds = async (dqMatchId) => {
     console.error('懂球帝赔率获取失败:', error.message)
     return null
   }
+}
+
+// ============ 咪咕视频解说数据 ============
+
+// 咪咕解说数据缓存
+let miguCommentatorsCache = null
+let miguCommentatorsCacheTime = 0
+const MIGU_CACHE_TTL = 30 * 60 * 1000 // 30分钟
+
+/**
+ * 咪咕中文队名 → 项目内部队伍 ID 映射
+ * 用于将咪咕 API 返回的中文队名匹配到比赛编号
+ */
+const miguTeamNameToId = {
+  '墨西哥': 'MEX', '南非': 'RSA', '韩国': 'KOR', '捷克': 'CZE',
+  '加拿大': 'CAN', '波黑': 'BIH', '瑞士': 'SUI', '卡塔尔': 'QAT',
+  '巴西': 'BRA', '摩洛哥': 'MAR', '苏格兰': 'SCO', '海地': 'HAI',
+  '美国': 'USA', '土耳其': 'TUR', '巴拉圭': 'PAR', '澳大利亚': 'AUS',
+  '德国': 'GER', '厄瓜多尔': 'ECU', '科特迪瓦': 'CIV', '库拉索': 'CUW',
+  '荷兰': 'NED', '瑞典': 'SWE', '日本': 'JPN', '突尼斯': 'TUN',
+  '比利时': 'BEL', '埃及': 'EGY', '伊朗': 'IRN', '新西兰': 'NZL',
+  '西班牙': 'ESP', '沙特阿拉伯': 'KSA', '沙特': 'KSA', '乌拉圭': 'URU', '佛得角': 'CPV', '佛得角群岛': 'CPV',
+  '法国': 'FRA', '塞内加尔': 'SEN', '挪威': 'NOR', '伊拉克': 'IRQ',
+  '阿根廷': 'ARG', '奥地利': 'AUT', '约旦': 'JOR', '阿尔及利亚': 'DZA',
+  '葡萄牙': 'POR', '哥伦比亚': 'COL', '乌兹别克斯坦': 'UZB', '民主刚果': 'COD', '刚果民主共和国': 'COD', '刚果(金)': 'COD',
+  '英格兰': 'ENG', '克罗地亚': 'CRO', '加纳': 'GHA', '巴拿马': 'PAN'
+}
+
+/**
+ * 根据咪咕返回的队名找到比赛编号
+ * 通过 pkInfoTitle（如 "西班牙vs佛得角"）匹配
+ */
+function findMatchNumByTeamNames(pkInfoTitle) {
+  if (!pkInfoTitle) return null
+  // 解析 "主队vs客队" 或 "主队 VS 客队"
+  const parts = pkInfoTitle.split(/\s*(?:vs|VS)\s*/)
+  if (parts.length !== 2) return null
+
+  const homeId = miguTeamNameToId[parts[0].trim()]
+  const awayId = miguTeamNameToId[parts[1].trim()]
+  if (!homeId || !awayId) return null
+
+  // 从赛程数据中查找匹配的比赛编号
+  // 使用缓存的赛程数据
+  const schedule = cache.get('schedule:fallback')
+  if (schedule?.data) {
+    const match = schedule.data.find(m => m.home_team === homeId && m.away_team === awayId)
+    if (match) return match.num
+  }
+  return null
+}
+
+/**
+ * 从咪咕视频 API 获取赛程解说数据
+ * 使用 competitionId=10000991 获取世界杯全部赛程
+ * @returns {Object|null} 解说数据映射 { matchNum: commentators }
+ */
+export async function fetchMiguCommentators() {
+  const now = Date.now()
+  if (miguCommentatorsCache && (now - miguCommentatorsCacheTime) < MIGU_CACHE_TTL) {
+    return miguCommentatorsCache
+  }
+
+  try {
+    const endpoint = API_CONFIG.migu.endpoints.matchList
+    const competitionId = API_CONFIG.migu.competitionId
+    // API 路径：/vms-match/v6/staticcache/basic/match-list/normal-match-list/0/{competitionId}/default/1/miguvideo/
+    const url = `${endpoint}/0/${competitionId}/default/1/miguvideo/`
+    const data = await miguClient.get(url)
+
+    if (data) {
+      const result = parseMiguMatchData(data)
+      if (Object.keys(result).length > 0) {
+        miguCommentatorsCache = result
+        miguCommentatorsCacheTime = now
+        // 合并到静态数据（不覆盖已有数据）
+        const current = getAllCommentators()
+        Object.keys(result).forEach(key => {
+          if (result[key] && !current[key]) {
+            updateCommentators({ [key]: result[key] })
+          }
+        })
+        return result
+      }
+    }
+  } catch (error) {
+    console.warn('咪咕 API 获取失败，使用静态数据:', error.message)
+  }
+
+  // API 失败时返回静态数据
+  const staticData = {}
+  const all = getAllCommentators()
+  Object.keys(all).forEach(key => {
+    if (all[key]) staticData[key] = all[key]
+  })
+  return staticData
+}
+
+/**
+ * 解析咪咕 API 返回的赛程数据，提取解说名单
+ * API 返回格式：{ data: [ { matchList: [ { pkInfoTitle, matchHost: [...] } ] } ] }
+ */
+function parseMiguMatchData(apiData) {
+  const result = {}
+
+  const parseMatch = (match) => {
+    if (!match) return
+    // 提取解说信息
+    const hosts = match.matchHost || match.hosts || []
+    const hostNames = hosts
+      .map(h => h.hostName || h.name || '')
+      .filter(Boolean)
+      .join(',')
+
+    if (!hostNames) return
+
+    // 通过队名匹配比赛编号
+    const matchNum = findMatchNumByTeamNames(match.pkInfoTitle)
+    if (matchNum) {
+      result[matchNum] = hostNames
+    }
+  }
+
+  // 遍历数据结构
+  const dataList = apiData.data || apiData
+  if (Array.isArray(dataList)) {
+    dataList.forEach(item => {
+      if (item.matchList && Array.isArray(item.matchList)) {
+        item.matchList.forEach(parseMatch)
+      } else {
+        parseMatch(item)
+      }
+    })
+  } else if (dataList.matchList) {
+    dataList.matchList.forEach(parseMatch)
+  }
+
+  return result
+}
+
+/**
+ * 获取某场比赛的解说名单
+ * @param {number|string} matchNum - 比赛编号
+ * @returns {string} 解说名单
+ */
+export function getMatchCommentators(matchNum) {
+  return getCommentators(matchNum)
 }

@@ -78,22 +78,15 @@ onMounted(async () => {
 
     <div v-else-if="favMatches.length > 0" class="fav-content">
       <div v-for="(dayMatches, date) in matchesByDate" :key="date" class="date-group">
-        <div class="date-header">
-          <div class="date-card">
-            <div class="date-card-main">
-              <span class="date-card-day">{{ dateParts(date).day }}</span>
-              <div class="date-card-meta">
-                <span class="date-card-month">{{ dateParts(date).month }}月</span>
-                <span class="date-card-weekday">{{ dateParts(date).weekday }}</span>
-              </div>
-            </div>
-            <span v-if="dateLabel(date)" class="date-card-badge">{{ dateLabel(date) }}</span>
+        <div class="date-line">
+          <div class="date-dot"></div>
+          <div class="date-info">
+            <span class="date-text">{{ dateParts(date).month }}月{{ dateParts(date).day }}日 {{ dateParts(date).weekday }}</span>
+            <span v-if="dateLabel(date)" class="date-tag">{{ dateLabel(date) }}</span>
           </div>
-          <div class="date-divider">
-            <span class="date-match-count">{{ dayMatches.length }} 场比赛</span>
-          </div>
+          <span class="date-count">{{ dayMatches.length }} 场</span>
         </div>
-        <div class="date-matches">
+        <div class="match-cards">
           <MatchCard
             v-for="match in dayMatches"
             :key="match.id"
@@ -159,90 +152,71 @@ onMounted(async () => {
 }
 
 .fav-content {
-  padding: var(--wc-space-md);
+  padding: var(--wc-space-lg) var(--wc-space-md);
 }
 
 .date-group {
-  margin-bottom: var(--wc-space-xl);
+  margin-bottom: var(--wc-space-2xl);
+  padding-left: var(--wc-space-lg);
+  border-left: 2px solid var(--wc-border);
+  position: relative;
 }
 
-.date-header {
-  margin-bottom: var(--wc-space-md);
+.date-group:last-child {
+  margin-bottom: 0;
 }
 
-.date-card {
+/* 时间线节点 */
+.date-line {
   display: flex;
   align-items: center;
   gap: var(--wc-space-md);
-  background: linear-gradient(135deg, rgba(77,171,247,0.15), rgba(77,171,247,0.05));
-  border: 1px solid rgba(77,171,247,0.2);
-  color: white;
-  padding: var(--wc-space-md) var(--wc-space-lg);
-  border-radius: var(--wc-radius-lg);
-  box-shadow: 0 2px 8px rgba(43, 108, 176, 0.2);
+  margin-bottom: var(--wc-space-lg);
+  margin-left: calc(-1 * var(--wc-space-lg) - 1px);
+  position: relative;
 }
 
-.date-card-main {
+.date-dot {
+  width: 10px;
+  height: 10px;
+  background: var(--wc-warning);
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 8px rgba(252, 196, 25, 0.4);
+}
+
+.date-info {
   display: flex;
   align-items: center;
   gap: var(--wc-space-sm);
-}
-
-.date-card-day {
-  font-size: 36px;
-  font-weight: 900;
-  line-height: 1;
-  letter-spacing: -1px;
-}
-
-.date-card-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.date-card-month {
-  font-size: var(--wc-font-size-base);
-  font-weight: 600;
-  opacity: 0.9;
-}
-
-.date-card-weekday {
-  font-size: var(--wc-font-size-sm);
-  opacity: 0.7;
-}
-
-.date-card-badge {
-  font-size: var(--wc-font-size-xs);
-  font-weight: 700;
-  background: rgba(255, 255, 255, 0.25);
-  padding: 2px 10px;
-  border-radius: var(--wc-radius-full);
-  margin-left: auto;
-  backdrop-filter: blur(4px);
-}
-
-.date-divider {
-  display: flex;
-  align-items: center;
-  gap: var(--wc-space-sm);
-  padding: var(--wc-space-xs) 0 0;
-}
-
-.date-divider::after {
-  content: '';
   flex: 1;
-  height: 1px;
-  background: var(--wc-border-light);
+  min-width: 0;
 }
 
-.date-match-count {
+.date-text {
+  font-size: var(--wc-font-size-base);
+  font-weight: var(--wc-font-weight-semibold);
+  color: var(--wc-text-primary);
+  white-space: nowrap;
+}
+
+.date-tag {
+  font-size: 10px;
+  font-weight: var(--wc-font-weight-bold);
+  color: var(--wc-warning);
+  background: var(--wc-warning-subtle);
+  padding: 2px 6px;
+  border-radius: var(--wc-radius-full);
+  white-space: nowrap;
+}
+
+.date-count {
   font-size: var(--wc-font-size-xs);
   color: var(--wc-text-muted);
   white-space: nowrap;
 }
 
-.date-matches {
+.match-cards {
   display: flex;
   flex-direction: column;
   gap: var(--wc-space-md);

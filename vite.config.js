@@ -29,8 +29,27 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/dongqiudi/, ''),
         secure: true,
-        headers: {
-          Referer: 'https://www.dongqiudi.com/'
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            proxyReq.setHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36')
+            proxyReq.setHeader('Referer', 'https://www.dongqiudi.com/')
+            proxyReq.setHeader('Origin', 'https://www.dongqiudi.com')
+            proxyReq.setHeader('Accept', 'application/json')
+          })
+        }
+      },
+      '/api/migu': {
+        target: 'https://app-sc.miguvideo.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/migu/, ''),
+        secure: true,
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            proxyReq.setHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36')
+            proxyReq.setHeader('Referer', 'https://www.miguvideo.com/')
+            proxyReq.setHeader('Origin', 'https://www.miguvideo.com')
+            proxyReq.setHeader('Accept', 'application/json')
+          })
         }
       }
     }

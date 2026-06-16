@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { getTeamById } from '../data/teams'
 import { getStageName } from '../utils/helpers'
 import { useFavorites } from '../composables/useFavorites'
+import { getMatchCommentators } from '../services'
 import StatusBadge from './StatusBadge.vue'
 
 const props = defineProps({
@@ -39,6 +40,13 @@ const isFinished = computed(() => {
 })
 
 const favorited = computed(() => isFav(props.match.num))
+
+const commentators = computed(() => {
+  // 只在未开始的比赛中显示解说名单
+  if (isLive.value || isFinished.value) return ''
+  const names = getMatchCommentators(props.match.num)
+  return names || ''
+})
 
 const onFavClick = (e) => {
   e.stopPropagation()
@@ -94,13 +102,24 @@ const onFavClick = (e) => {
       </div>
     </div>
 
-    <!-- 底部场馆 -->
-    <div v-if="match.venue_name && !compact" class="card-footer">
-      <svg class="venue-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <path d="M3 21V7l9-4 9 4v14"/>
-        <path d="M9 21V12h6v9"/>
-      </svg>
-      <span class="venue-name">{{ match.venue_name }}</span>
+    <!-- 底部场馆 & 解说 -->
+    <div v-if="(match.venue_name && !compact) || commentators" class="card-footer">
+      <div v-if="match.venue_name && !compact" class="footer-item">
+        <svg class="footer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M3 21V7l9-4 9 4v14"/>
+          <path d="M9 21V12h6v9"/>
+        </svg>
+        <span class="footer-text">{{ match.venue_name }}</span>
+      </div>
+      <div v-if="commentators" class="footer-item commentators">
+        <svg class="footer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="23"/>
+          <line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
+        <span class="footer-text">{{ commentators }}</span>
+      </div>
     </div>
 
     <!-- 直播光效 -->
@@ -290,27 +309,43 @@ const onFavClick = (e) => {
   font-weight: var(--wc-font-weight-bold);
 }
 
-/* 底部场馆 */
+/* 底部场馆 & 解说 */
 .card-footer {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: var(--wc-space-lg);
   margin-top: var(--wc-space-lg);
   padding-top: var(--wc-space-md);
   border-top: 1px solid var(--wc-border-light);
+  flex-wrap: wrap;
 }
 
-.venue-icon {
+.footer-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.footer-icon {
   width: 14px;
   height: 14px;
   color: var(--wc-text-muted);
   flex-shrink: 0;
 }
 
-.venue-name {
+.footer-text {
   font-size: var(--wc-font-size-xs);
   color: var(--wc-text-muted);
+}
+
+.commentators .footer-icon {
+  color: var(--wc-primary);
+  opacity: 0.7;
+}
+
+.commentators .footer-text {
+  color: var(--wc-text-secondary);
 }
 
 /* 直播光效 */

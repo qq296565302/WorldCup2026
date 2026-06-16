@@ -58,19 +58,25 @@ onMounted(async () => {
   <div class="page-container" v-if="team">
     <!-- 队伍头部 -->
     <header class="team-header">
+      <!-- 国旗模糊背景 -->
+      <div class="flag-bg" v-if="team.logo">
+        <img :src="team.logo" alt="" class="flag-bg-img" />
+      </div>
+      <!-- 暗色遮罩保证文字可读 -->
+      <div class="header-overlay"></div>
+      <!-- 装饰光效 -->
+      <div class="header-glow"></div>
+
       <button class="back-btn" @click="router.back()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="15 18 9 12 15 6"/>
         </svg>
       </button>
-      <div class="header-bg">
-        <div class="bg-circle c1"></div>
-        <div class="bg-circle c2"></div>
-      </div>
+
       <div class="header-content">
-        <div class="team-flag">
-          <img v-if="team.logo" :src="team.logo" :alt="team.name" loading="lazy" class="team-flag-img" />
-          <span v-else>{{ team.flag }}</span>
+        <div class="team-logo-wrap">
+          <img v-if="team.logo" :src="team.logo" :alt="team.name" loading="lazy" class="team-logo-img" />
+          <span v-else class="team-flag-text">{{ team.flag }}</span>
         </div>
         <h1 class="team-name">{{ team.name }}</h1>
         <p class="team-name-en">{{ team.nameEn }}</p>
@@ -188,18 +194,93 @@ onMounted(async () => {
 <style scoped>
 .team-header {
   position: relative;
-  background: linear-gradient(135deg, var(--wc-bg), var(--wc-bg-elevated));
   color: white;
   padding: var(--wc-space-4xl) var(--wc-space-lg) var(--wc-space-2xl);
   overflow: hidden;
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 国旗飘扬背景 */
+.flag-bg {
+  position: absolute;
+  inset: -40px;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  perspective: 800px;
+}
+
+.flag-bg-img {
+  width: 85%;
+  max-width: 420px;
+  height: auto;
+  object-fit: contain;
+  opacity: 0.15;
+  filter: blur(12px) saturate(1.8);
+  transform-origin: left center;
+  animation: flagWave 6s ease-in-out infinite;
+}
+
+@keyframes flagWave {
+  0% {
+    transform: perspective(800px) rotateY(0deg) skewY(0deg) scaleX(1);
+  }
+  15% {
+    transform: perspective(800px) rotateY(8deg) skewY(-1deg) scaleX(1.02);
+  }
+  30% {
+    transform: perspective(800px) rotateY(-4deg) skewY(1.5deg) scaleX(0.98);
+  }
+  50% {
+    transform: perspective(800px) rotateY(10deg) skewY(-2deg) scaleX(1.04);
+  }
+  70% {
+    transform: perspective(800px) rotateY(-6deg) skewY(1deg) scaleX(0.97);
+  }
+  85% {
+    transform: perspective(800px) rotateY(5deg) skewY(-0.5deg) scaleX(1.01);
+  }
+  100% {
+    transform: perspective(800px) rotateY(0deg) skewY(0deg) scaleX(1);
+  }
+}
+
+/* 暗色遮罩 */
+.header-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    180deg,
+    rgba(15, 25, 35, 0.7) 0%,
+    rgba(15, 25, 35, 0.85) 50%,
+    rgba(15, 25, 35, 0.95) 100%
+  );
+}
+
+/* 装饰光效 */
+.header-glow {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.06), transparent 60%),
+    radial-gradient(circle at 20% 80%, rgba(77, 171, 247, 0.08), transparent 40%);
+  pointer-events: none;
 }
 
 .back-btn {
   position: absolute;
   left: var(--wc-space-md);
   top: var(--wc-space-lg);
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
   color: white;
   cursor: pointer;
   width: 40px;
@@ -208,12 +289,13 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2;
-  transition: background var(--wc-transition-fast);
+  z-index: 3;
+  transition: all var(--wc-transition-fast);
 }
 
 .back-btn:active {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(0.92);
 }
 
 .back-btn svg {
@@ -221,68 +303,70 @@ onMounted(async () => {
   height: 20px;
 }
 
-.header-bg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-}
-
-.bg-circle {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.bg-circle.c1 {
-  width: 150px;
-  height: 150px;
-  top: -40px;
-  right: -30px;
-}
-
-.bg-circle.c2 {
-  width: 100px;
-  height: 100px;
-  bottom: -20px;
-  left: 10%;
-}
-
 .header-content {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   text-align: center;
+  animation: headerEnter 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
-.team-flag {
-  width: 80px;
-  height: 80px;
-  margin-bottom: var(--wc-space-md);
+@keyframes headerEnter {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 队徽 */
+.team-logo-wrap {
+  width: 88px;
+  height: 88px;
+  margin: 0 auto var(--wc-space-lg);
   display: flex;
   align-items: center;
   justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--wc-radius-2xl);
+  padding: 6px;
+  animation: logoFloat 4s ease-in-out infinite;
 }
 
-.team-flag-img {
-  width: 80px;
-  height: 80px;
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.team-logo-img {
+  width: 72px;
+  height: 72px;
   object-fit: contain;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
+}
+
+.team-flag-text {
+  font-size: 48px;
 }
 
 .team-name {
   font-size: var(--wc-font-size-4xl);
   font-weight: var(--wc-font-weight-black);
   margin: 0;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  letter-spacing: -0.5px;
 }
 
 .team-name-en {
   font-size: var(--wc-font-size-base);
-  opacity: 0.8;
-  margin-top: var(--wc-space-xs);
+  opacity: 0.6;
+  margin-top: 4px;
+  font-weight: var(--wc-font-weight-medium);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 .team-badges {
@@ -294,18 +378,22 @@ onMounted(async () => {
 }
 
 .badge {
-  padding: var(--wc-space-xs) var(--wc-space-md);
+  padding: 4px 12px;
   border-radius: var(--wc-radius-full);
-  font-size: var(--wc-font-size-sm);
-  font-weight: var(--wc-font-weight-medium);
+  font-size: var(--wc-font-size-xs);
+  font-weight: var(--wc-font-weight-semibold);
+  letter-spacing: 0.3px;
 }
 
 .group-badge {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(4px);
 }
 
 .conf-badge {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .rank-badge {

@@ -1,7 +1,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getSchedule } from '../services'
+import { ElNotification } from 'element-plus'
+import { getSchedule, fetchMiguCommentators } from '../services'
 import { useFavorites } from '../composables/useFavorites'
 import { formatDate } from '../utils/helpers'
 import TabBar from '../components/TabBar.vue'
@@ -14,24 +15,24 @@ const router = useRouter()
 const { isFav, shouldAlertToday, markAlerted } = useFavorites()
 const matches = ref([])
 const loading = ref(true)
-const activeStage = ref('all')
+const activeFilter = ref('all')
 
-const stages = [
+const filters = [
   { key: 'all', label: '全部' },
-  { key: 'group', label: '小组赛' },
-  { key: '16', label: '1/8 决赛' },
-  { key: '8', label: '1/4 决赛' },
-  { key: '4', label: '半决赛' },
-  { key: '3', label: '三四名' },
-  { key: '2', label: '决赛' }
+  { key: 'scheduled', label: '未开始' },
+  { key: 'live', label: '进行中' },
+  { key: 'finished', label: '已结束' }
 ]
 
+const liveStatuses = ['live', '1H', '2H', 'HT', 'ET', 'P']
+const finishedStatuses = ['finished', 'FT']
+
 const filteredMatches = computed(() => {
-  let result = matches.value
-  if (activeStage.value !== 'all') {
-    result = result.filter(m => m.stage === activeStage.value)
-  }
-  return result
+  const val = activeFilter.value
+  if (val === 'all') return matches.value
+  if (val === 'live') return matches.value.filter(m => liveStatuses.includes(m.status))
+  if (val === 'finished') return matches.value.filter(m => finishedStatuses.includes(m.status))
+  return matches.value.filter(m => !liveStatuses.includes(m.status) && !finishedStatuses.includes(m.status))
 })
 
 const matchesByDate = computed(() => {
@@ -68,13 +69,24 @@ const dateParts = (date) => {
 onMounted(async () => {
   loading.value = true
   try {
-    matches.value = await getSchedule()
+    // 并行加载赛程和咪咕解说数据
+    const [scheduleData] = await Promise.all([
+      getSchedule(),
+      fetchMiguCommentators().catch(e => console.warn('解说数据获取失败:', e.message))
+    ])
+    matches.value = scheduleData
     if (shouldAlertToday()) {
       const today = new Date().toISOString().slice(0, 10)
       const todayFav = matches.value.filter(m => isFav(m.num) && m.date === today && m.status === 'scheduled')
       if (todayFav.length > 0) {
         const names = todayFav.map(m => `${m.home_name} vs ${m.away_name}`).join('、')
-        alert(`今日收藏比赛提醒：${names}`)
+        ElNotification({
+          title: '今日收藏比赛提醒',
+          message: `今日有 ${todayFav.length} 场收藏比赛即将开始：${names}`,
+          type: 'success',
+          duration: 0,
+          position: 'top-right'
+        })
         markAlerted()
       }
     }
@@ -118,7 +130,7 @@ onMounted(async () => {
 
     <!-- 筛选栏 -->
     <div class="filter-bar">
-      <TabBar :tabs="stages" v-model:active="activeStage" />
+      <TabBar :tabs="filters" v-model:active="activeFilter" />
     </div>
 
     <LoadingState v-if="loading" />

@@ -1,7 +1,4 @@
-// 判断是否为开发环境
-const isDev = import.meta.env.DEV
-
-// API 配置
+// API 配置 — 统一走 /api/ 路径，由 Nginx 反向代理
 export const API_CONFIG = {
   // 聚合数据 - 2026 美加墨世界杯 API
   juhe: {
@@ -15,9 +12,9 @@ export const API_CONFIG = {
     }
   },
 
-  // wheniskickoff.com 数据源（开发环境走代理）
+  // wheniskickoff.com 数据源（通过 Nginx 代理）
   wheniskickoff: {
-    baseUrl: isDev ? '/api/wheniskickoff' : 'https://wheniskickoff.com/data/v1',
+    baseUrl: '/api/wheniskickoff',
     endpoints: {
       matches: '/matches.json',
       teams: '/teams.json',
@@ -26,9 +23,9 @@ export const API_CONFIG = {
     }
   },
 
-  // 懂球帝数据源（开发环境走代理）
+  // 懂球帝数据源（通过 Nginx 代理）
   dongqiudi: {
-    baseUrl: isDev ? '/api/dongqiudi' : 'https://www.dongqiudi.com',
+    baseUrl: '/api/dongqiudi',
     endpoints: {
       matchDetail: '/magicball/v1/match/app/detail',
       matchOverview: '/api/data/overview/match',
@@ -38,9 +35,9 @@ export const API_CONFIG = {
     }
   },
 
-  // TheSportsDB（开发环境走代理）
+  // TheSportsDB（通过 Nginx 代理）
   theSportsDb: {
-    baseUrl: isDev ? '/api/thesportsdb' : 'https://www.thesportsdb.com/api/v1/json/3',
+    baseUrl: '/api/thesportsdb',
     worldCupLeagueId: '4429',
     endpoints: {
       allTeams: '/lookup_all_teams.php',
@@ -48,6 +45,16 @@ export const API_CONFIG = {
       player: '/lookupplayer.php',
       eventsSeason: '/eventsseason.php',
       searchPlayer: '/searchplayers.php'
+    }
+  },
+
+  // 咪咕视频（通过 Nginx 代理）
+  migu: {
+    baseUrl: '/api/migu',
+    competitionId: '10000991',
+    endpoints: {
+      // 赛程列表 API：获取指定赛事的全部比赛及解说信息
+      matchList: '/vms-match/v6/staticcache/basic/match-list/normal-match-list'
     }
   }
 }
